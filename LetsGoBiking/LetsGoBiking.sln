@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36511.14 d17.14
+VisualStudioVersion = 17.14.36511.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serveur", "Serveur\Serveur.csproj", "{18BB042A-EE6A-4DEF-A9E6-027FEEC5BBAA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Proxy", "Proxy\Proxy.csproj", "{60B48F68-1997-4536-BF6F-864AC44FBCFD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{18BB042A-EE6A-4DEF-A9E6-027FEEC5BBAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{18BB042A-EE6A-4DEF-A9E6-027FEEC5BBAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{18BB042A-EE6A-4DEF-A9E6-027FEEC5BBAA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60B48F68-1997-4536-BF6F-864AC44FBCFD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60B48F68-1997-4536-BF6F-864AC44FBCFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60B48F68-1997-4536-BF6F-864AC44FBCFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60B48F68-1997-4536-BF6F-864AC44FBCFD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
