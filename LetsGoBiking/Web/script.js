@@ -1,10 +1,11 @@
+
 class AddressAutocomplete extends HTMLElement {
     constructor() {
         super();
-        
+          
         this.wrapper = document.createElement('div');
         this.wrapper.className = 'ac-wrapper';
-        
+          
         this.input = document.createElement('input');
         this.input.type = 'text';
         this.input.autocomplete = 'off';
@@ -42,7 +43,7 @@ class AddressAutocomplete extends HTMLElement {
             this.hideSuggestions();
             return;
         }
-        this.debounceTimeout = setTimeout(() => this.fetchSuggestions(value), 750);
+        this.debounceTimeout = setTimeout(() => this.fetchSuggestions(value), 300);
     }
 
     fetchSuggestions(query) {
@@ -107,6 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
         startAC: document.getElementById('start-autocomplete'),
         endAC: document.getElementById('end-autocomplete'),
         calculateBtn: document.getElementById('calculate-route-btn'),
+        resetBtn: document.getElementById('reset-route-btn'),
         statusEl: document.getElementById('itinerary-status'),
         stepsEl: document.getElementById('steps'),
         mapEl: document.getElementById('map'),
@@ -119,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function initMap() {
         currentMap = L.map(elements.mapEl, {
             zoomControl: false
-        }).setView([43.6152, 7.0702], 12);
+        }).setView([43.6152, 7.0702], 12); 
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
@@ -131,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setStatus(text, type = 'info') {
-        elements.statusEl.textContent = text || '';
+        elements.statusEl.innerHTML = text || ''; 
         elements.statusEl.style.color = type === 'error' ? '#d93025' : 'var(--text-dark)';
     }
 
@@ -165,56 +167,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function buildRoute(startText, endText) {
-        try {
-            setStatus('Chargement de l\'itinéraire…');
-            elements.stepsEl.innerHTML = '';
-            elements.resultsContainer.classList.remove('collapsed');
-            
-            const [start, end] = await Promise.all([
-                geocodeAddress(startText),
-                geocodeAddress(endText)
-            ]);
+    
 
-            routeLayerGroup.clearLayers();
-
-            L.marker([start.lat, start.lon]).addTo(routeLayerGroup).bindPopup('Départ: ' + start.label);
-            L.marker([end.lat, end.lon]).addTo(routeLayerGroup).bindPopup('Arrivée: ' + end.label);
-
-            const osrmUrl = `https://router.project-osrm.org/route/v1/foot/${start.lon},${start.lat};${end.lon},${end.lat}?overview=full&geometries=geojson&steps=true`;
-            const res = await fetch(osrmUrl);
-            if (!res.ok) throw new Error('Service d\'itinéraire indisponible');
-            const routeData = await res.json();
-            if (!routeData.routes || !routeData.routes.length) throw new Error('Aucun itinéraire trouvé');
-            
-            const route = routeData.routes[0];
-
-            const coords = route.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
-            const line = L.polyline(coords, { 
-                color: 'var(--primary-color)', 
-                weight: 6, 
-                opacity: 0.8
-            }).addTo(routeLayerGroup);
-            
-            currentMap.fitBounds(line.getBounds().pad(0.15));
-
-            renderSteps(route.legs);
-
-            const km = (route.distance / 1000).toFixed(1);
-            const min = Math.round(route.duration / 60);
-            setStatus(`Distance: ${km} km • Durée: ~${min} min`);
-
-        } catch (err) {
-            setStatus('Erreur: ' + (err.message || 'échec du chargement'), 'error');
-        }
-    }
-
-    function renderSteps(legs) {
-        elements.stepsEl.innerHTML = '';
-        
+    /**
+     * NOUVELLE FONCTION : Ajoute les étapes OSRM à la liste
+     */
+    function appendRouteSteps(legs) {
         const icons = {
             turn: '↱', continue: '→', depart: '●', arrive: '★',
-            fork: 'C', merge: '⑁', roundabout: '⟲'
+            fork: 'Y', merge: '⑁', roundabout: '⟲',
+            'new name': '→', 'notification': '🔔'
         };
 
         legs.forEach(leg => {
@@ -223,14 +185,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dist = Math.max(1, Math.round(step.distance));
                 const instr = step.maneuver.instruction || step.maneuver.type || 'Continuer';
                 const type = (step.maneuver.type || 'continue').toLowerCase();
-                const icon = icons[type] || icons.continue;
+                  
+                
+                let icon = icons[type];
+                if (!icon) {
+                    if (type.includes('left')) icon = '↰';
+                    else if (type.includes('right')) icon = '↱';
+                    else if (type.includes('straight')) icon = '↑';
+                    else icon = icons.continue;
+                }
 
                 const li = document.createElement('li');
                 li.className = 'step-item';
                 li.innerHTML = `
-                    <div class="step-marker">${icon}</div>
+                    <div class="step-marker" style="font-size: 1.5rem; color: var(--text-light);">${icon}</div>
                     <div class="step-content">
-                        <div class="step-title">${instr}</div>
+                        <div class="step-title" style="font-weight: 500;">${instr}</div>
                         ${name ? `<div class="step-sub">sur ${name}</div>` : ''}
                     </div>
                     <div class="step-badge">${dist} m</div>
@@ -240,15 +210,185 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    /**
+     * NOUVELLE FONCTION : Ajoute une étape "pivot" (ex: "Marcher vers la station")
+     */
+    function addCustomStep(title, subtext = '', icon = '📍') {
+        const li = document.createElement('li');
+        li.className = 'step-item';
+        
+        li.style.background = 'var(--bg-light)';
+        li.style.borderRadius = '8px';
+        li.style.paddingTop = '1rem';
+        li.style.paddingBottom = '1rem';
+        li.style.borderBottom = 'none';
+
+        li.innerHTML = `
+            <div class="step-marker" style="color: var(--text-dark);">${icon}</div>
+            <div class="step-content">
+                <div class="step-title">${title}</div>
+                ${subtext ? `<div class="step-sub" style="color: var(--primary-color); font-weight: 500;">${subtext}</div>` : ''}
+            </div>
+        `;
+        elements.stepsEl.appendChild(li);
+    }
+
+    /**
+     * FONCTION PRINCIPALE MODIFIÉE : buildRoute
+     */
+    async function buildRoute(startText, endText) {
+        try {
+            setStatus('Recherche de l\'itinéraire vélo…');
+            elements.stepsEl.innerHTML = ''; 
+            elements.resultsContainer.classList.remove('collapsed');
+            routeLayerGroup.clearLayers(); 
+
+            
+            const [startGeocoded, endGeocoded] = await Promise.all([
+                geocodeAddress(startText),
+                geocodeAddress(endText)
+            ]);
+
+            
+            const backendUrl = `http://localhost:8733/itinerary?originLat=${startGeocoded.lat}&originLng=${startGeocoded.lon}&destLat=${endGeocoded.lat}&destLng=${endGeocoded.lon}`;
+            let itineraryData;
+            try {
+                const backendRes = await fetch(backendUrl);
+                if (!backendRes.ok) throw new Error(`Erreur ${backendRes.status}`);
+                itineraryData = await backendRes.json();
+            } catch (backendErr) {
+                throw new Error(`Service de vélos indisponible (vérifiez que le service C# est lancé sur localhost:8733)`);
+            }
+              
+            const { start, pickup, dropoff, end } = itineraryData;
+
+            
+            setStatus('Calcul des segments d\'itinéraire…');
+            const walk1Url = `https://router.project-osrm.org/route/v1/foot/${start.longitude},${start.latitude};${pickup.longitude},${pickup.latitude}?overview=full&geometries=geojson&steps=true`;
+            const bikeUrl = `https://router.project-osrm.org/route/v1/bicycle/${pickup.longitude},${pickup.latitude};${dropoff.longitude},${dropoff.latitude}?overview=full&geometries=geojson&steps=true`;
+            const walk2Url = `https://router.project-osrm.org/route/v1/foot/${dropoff.longitude},${dropoff.latitude};${end.longitude},${end.latitude}?overview=full&geometries=geojson&steps=true`;
+              
+            const [walk1Res, bikeRes, walk2Res] = await Promise.all([
+                fetch(walk1Url), fetch(bikeUrl), fetch(walk2Url)
+            ]);
+
+            if (!walk1Res.ok || !bikeRes.ok || !walk2Res.ok) {
+                throw new Error('Service d\'itinéraire (OSRM) indisponible');
+            }
+              
+            const [walk1Data, bikeData, walk2Data] = await Promise.all([
+                walk1Res.json(), bikeRes.json(), walk2Res.json()
+            ]);
+              
+            if (!walk1Data.routes?.[0] || !bikeData.routes?.[0] || !walk2Data.routes?.[0]) {
+                 throw new Error('Impossible de calculer un segment de l\'itinéraire');
+            }
+              
+            const routeWalk1 = walk1Data.routes[0];
+            const routeBike = bikeData.routes[0];
+            const routeWalk2 = walk2Data.routes[0];
+
+
+            const routeLines = L.featureGroup();
+
+
+            const coordsW1 = routeWalk1.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
+            L.polyline(coordsW1, { 
+                color: '#0056b3', 
+                weight: 5, 
+                opacity: 0.8,
+                dashArray: '5, 8' 
+            }).addTo(routeLines);
+
+            
+            const coordsBike = routeBike.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
+            L.polyline(coordsBike, { 
+                color: 'var(--primary-color)', 
+                weight: 7, 
+                opacity: 0.9 
+            }).addTo(routeLines);
+              
+            
+            const coordsW2 = routeWalk2.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
+            L.polyline(coordsW2, { 
+                color: '#0056b3', 
+                weight: 5, 
+                opacity: 0.8,
+                dashArray: '5, 8'
+            }).addTo(routeLines);
+
+            
+            L.marker([start.latitude, start.longitude])
+             .addTo(routeLines)
+             .bindPopup(`<b>Départ</b><br>${startGeocoded.label}`);
+             
+            L.marker([pickup.latitude, pickup.longitude])
+             .addTo(routeLines)
+             .bindPopup(`<b>🚲 Station de prise</b><br>${pickup.address}<br><b>Vélos dispo: ${pickup.availableBikes}</b>`);
+
+            L.marker([dropoff.latitude, dropoff.longitude])
+             .addTo(routeLines)
+             .bindPopup(`<b>🅿️ Station de rendu</b><br>${dropoff.address || 'Adresse inconnue'}<br><b>Places dispo: ${dropoff.availableDropPlace}</b>`);
+
+            L.marker([end.latitude, end.longitude])
+             .addTo(routeLines)
+             .bindPopup(`<b>Arrivée</b><br>${endGeocoded.label}`);
+
+            routeLines.addTo(routeLayerGroup);
+            currentMap.fitBounds(routeLines.getBounds().pad(0.15));
+
+            
+            elements.stepsEl.innerHTML = ''; 
+              
+            const pickupSub = `~${Math.round(routeWalk1.duration / 60)} min | <b>${pickup.availableBikes} vélos dispo</b>`;
+            addCustomStep(
+                `Marchez vers ${pickup.address || 'la station'}`,
+                pickupSub,
+                '🚶'
+            );
+            appendRouteSteps(routeWalk1.legs);
+
+            const dropoffSub = `~${Math.round(routeBike.duration / 60)} min | <b>${dropoff.availableDropPlace} places dispo</b>`;
+            addCustomStep(
+                `Roulez vers ${dropoff.address || 'la station'}`,
+                dropoffSub,
+                '🚲'
+            );
+            appendRouteSteps(routeBike.legs);
+
+            addCustomStep(
+                `Marchez vers ${endGeocoded.label}`,
+                `~${Math.round(routeWalk2.duration / 60)} min`,
+                '🏁'
+            );
+            appendRouteSteps(routeWalk2.legs);
+
+            
+            const totalKm = ((routeWalk1.distance + routeBike.distance + routeWalk2.distance) / 1000).toFixed(1);
+            const totalMin = Math.round((routeWalk1.duration + routeBike.duration + routeWalk2.duration) / 60);
+            setStatus(`Total: ${totalKm} km • ~${totalMin} min (🚶+🚲)`);
+
+        } catch (err) {
+            console.error('Erreur lors du calcul d\'itinéraire:', err);
+            setStatus('Erreur: ' + (err.message || 'échec du chargement'), 'error');
+        }
+    }
+      
+    
+    
+
+    
+
+
     function togglePanel() {
         elements.panel.classList.toggle('collapsed');
         elements.panelToggleBtn.classList.toggle('collapsed');
-        
+          
         const isCollapsed = elements.panel.classList.contains('collapsed');
-        elements.panelToggleBtn.setAttribute('aria-label', 
+        elements.panelToggleBtn.setAttribute('aria-label', 
             isCollapsed ? 'Afficher le panneau' : 'Masquer le panneau'
         );
-        
+          
         setTimeout(() => {
             currentMap.invalidateSize();
         }, 400);
@@ -257,7 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleSteps() {
         elements.resultsContainer.classList.toggle('collapsed');
     }
-    
+      
     function setView(view) {
         if (view === 'map') {
             document.body.classList.add('view-map');
@@ -270,27 +410,43 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.viewSwitchBtn.textContent = 'Voir la carte';
         }
     }
-    
+
+function resetRoute() {
+        
+        elements.startAC.value = '';
+        elements.endAC.value = '';
+        
+        
+        routeLayerGroup.clearLayers();
+        
+        
+        setStatus('');
+        elements.stepsEl.innerHTML = '';
+        elements.resultsContainer.classList.add('collapsed');
+        
+        
+        localStorage.removeItem('itinerary_start');
+        localStorage.removeItem('itinerary_end');
+
+        
+        if (window.innerWidth < 768) {
+            setView('panel');
+        }
+    }
+      
     function toggleView() {
         const isMapView = document.body.classList.contains('view-map');
         setView(isMapView ? 'panel' : 'map');
     }
-    
-    function checkAndSwitchView() {
-        if (window.innerWidth < 768 && elements.startAC.value && elements.endAC.value) {
-            setView('map');
-        }
-    }
-
+      
     initMap();
 
     elements.panelToggleBtn.addEventListener('click', togglePanel);
     elements.statusEl.addEventListener('click', toggleSteps);
     elements.calculateBtn.addEventListener('click', handleRouteCalculation);
+    elements.resetBtn.addEventListener('click', resetRoute);   
     elements.viewSwitchBtn.addEventListener('click', toggleView);
-    
-    elements.startAC.addEventListener('address-selected', checkAndSwitchView);
-    elements.endAC.addEventListener('address-selected', checkAndSwitchView);
+
 
     const initialStart = localStorage.getItem('itinerary_start');
     const initialEnd = localStorage.getItem('itinerary_end');
