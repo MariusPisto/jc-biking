@@ -28,7 +28,7 @@ namespace Proxy
             // ServiceHost host = new ServiceHost(typeof(MyCalculatorService.SimpleCalculator), httpUrl, tcpUrl);
 
             //Add a service endpoint
-            host.AddServiceEndpoint(typeof(IProxyService), new WSHttpBinding(), "");
+            host.AddServiceEndpoint(typeof(IProxyService), new BasicHttpBinding(), "");
 
             //Enable metadata exchange
             ServiceMetadataBehavior smb = new ServiceMetadataBehavior();

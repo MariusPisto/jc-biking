@@ -6,7 +6,7 @@ namespace Serveur
     {
         static void Main(string[] args)
         {
-            var routingService = new RoutingService("http://localhost:8733/");
+            RoutingService routingService = new RoutingService("http://localhost:8733/");
             routingService.Start();
             Console.WriteLine("Service is host at " + DateTime.Now.ToString());
             Console.WriteLine("REST RoutingService running at http://localhost:8733/");
