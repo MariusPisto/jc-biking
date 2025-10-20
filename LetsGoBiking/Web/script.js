@@ -1,4 +1,3 @@
-
 class AddressAutocomplete extends HTMLElement {
     constructor() {
         super();
@@ -101,6 +100,8 @@ customElements.define('address-autocomplete', AddressAutocomplete);
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    const ORS_API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjU4MTIzY2Q5NGM4YzRlYmNhNGExZTJjZGEwNmVkYzBkIiwiaCI6Im11cm11cjY0In0=';
+
     let currentMap = null;
     let routeLayerGroup = null;
 
@@ -167,33 +168,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    
-
-    /**
-     * NOUVELLE FONCTION : Ajoute les étapes OSRM à la liste
-     */
-    function appendRouteSteps(legs) {
-        const icons = {
-            turn: '↱', continue: '→', depart: '●', arrive: '★',
-            fork: 'Y', merge: '⑁', roundabout: '⟲',
-            'new name': '→', 'notification': '🔔'
+    function appendRouteSteps(segments) {
+        const orsIcons = {
+            0: '↰', 1: '↱', 2: '↰', 3: '↱', 4: '↰', 5: '↱',
+            6: '↑', 7: '⟲', 8: '⟲', 9: '↩', 10: '★', 11: '●'
         };
 
-        legs.forEach(leg => {
-            leg.steps.forEach(step => {
-                const name = step.name || '';
+        segments.forEach(segment => {
+            segment.steps.forEach(step => {
+                const rawName = (step.name || '').trim();
+                const name = (rawName && rawName !== '-' && rawName !== '–' && rawName !== '—') ? rawName : '';
                 const dist = Math.max(1, Math.round(step.distance));
-                const instr = step.maneuver.instruction || step.maneuver.type || 'Continuer';
-                const type = (step.maneuver.type || 'continue').toLowerCase();
-                  
+                const instr = step.instruction || 'Continuer';
+                const type = step.type;
                 
-                let icon = icons[type];
-                if (!icon) {
-                    if (type.includes('left')) icon = '↰';
-                    else if (type.includes('right')) icon = '↱';
-                    else if (type.includes('straight')) icon = '↑';
-                    else icon = icons.continue;
-                }
+                let icon = orsIcons[type] || '→'; 
 
                 const li = document.createElement('li');
                 li.className = 'step-item';
@@ -210,9 +199,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /**
-     * NOUVELLE FONCTION : Ajoute une étape "pivot" (ex: "Marcher vers la station")
-     */
     function addCustomStep(title, subtext = '', icon = '📍') {
         const li = document.createElement('li');
         li.className = 'step-item';
@@ -233,9 +219,6 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.stepsEl.appendChild(li);
     }
 
-    /**
-     * FONCTION PRINCIPALE MODIFIÉE : buildRoute
-     */
     async function buildRoute(startText, endText) {
         try {
             setStatus('Recherche de l\'itinéraire vélo…');
@@ -264,29 +247,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
             
             setStatus('Calcul des segments d\'itinéraire…');
-            const walk1Url = `https://router.project-osrm.org/route/v1/foot/${start.longitude},${start.latitude};${pickup.longitude},${pickup.latitude}?overview=full&geometries=geojson&steps=true`;
-            const bikeUrl = `https://router.project-osrm.org/route/v1/bicycle/${pickup.longitude},${pickup.latitude};${dropoff.longitude},${dropoff.latitude}?overview=full&geometries=geojson&steps=true`;
-            const walk2Url = `https://router.project-osrm.org/route/v1/foot/${dropoff.longitude},${dropoff.latitude};${end.longitude},${end.latitude}?overview=full&geometries=geojson&steps=true`;
+            const walk1Url = `https://api.openrouteservice.org/v2/directions/foot-walking?api_key=${ORS_API_KEY}&start=${start.longitude},${start.latitude}&end=${pickup.longitude},${pickup.latitude}`;
+            const bikeUrl = `https://api.openrouteservice.org/v2/directions/cycling-regular?api_key=${ORS_API_KEY}&start=${pickup.longitude},${pickup.latitude}&end=${dropoff.longitude},${dropoff.latitude}`;
+            const walk2Url = `https://api.openrouteservice.org/v2/directions/foot-walking?api_key=${ORS_API_KEY}&start=${dropoff.longitude},${dropoff.latitude}&end=${end.longitude},${end.latitude}`;
               
             const [walk1Res, bikeRes, walk2Res] = await Promise.all([
                 fetch(walk1Url), fetch(bikeUrl), fetch(walk2Url)
             ]);
 
             if (!walk1Res.ok || !bikeRes.ok || !walk2Res.ok) {
-                throw new Error('Service d\'itinéraire (OSRM) indisponible');
+                throw new Error('Service d\'itinéraire (OpenRouteService) indisponible');
             }
               
             const [walk1Data, bikeData, walk2Data] = await Promise.all([
                 walk1Res.json(), bikeRes.json(), walk2Res.json()
             ]);
               
-            if (!walk1Data.routes?.[0] || !bikeData.routes?.[0] || !walk2Data.routes?.[0]) {
+            if (!walk1Data.features?.[0] || !bikeData.features?.[0] || !walk2Data.features?.[0]) {
                  throw new Error('Impossible de calculer un segment de l\'itinéraire');
             }
               
-            const routeWalk1 = walk1Data.routes[0];
-            const routeBike = bikeData.routes[0];
-            const routeWalk2 = walk2Data.routes[0];
+            const routeWalk1 = walk1Data.features[0];
+            const routeBike = bikeData.features[0];
+            const routeWalk2 = walk2Data.features[0];
 
 
             const routeLines = L.featureGroup();
@@ -340,32 +323,32 @@ document.addEventListener('DOMContentLoaded', () => {
             
             elements.stepsEl.innerHTML = ''; 
               
-            const pickupSub = `~${Math.round(routeWalk1.duration / 60)} min | <b>${pickup.availableBikes} vélos dispo</b>`;
+            const pickupSub = `~${Math.round(routeWalk1.properties.summary.duration / 60)} min | <b>${pickup.availableBikes} vélos dispo</b>`;
             addCustomStep(
                 `Marchez vers ${pickup.address || 'la station'}`,
                 pickupSub,
                 '🚶'
             );
-            appendRouteSteps(routeWalk1.legs);
+            appendRouteSteps(routeWalk1.properties.segments);
 
-            const dropoffSub = `~${Math.round(routeBike.duration / 60)} min | <b>${dropoff.availableDropPlace} places dispo</b>`;
+            const dropoffSub = `~${Math.round(routeBike.properties.summary.duration / 60)} min | <b>${dropoff.availableDropPlace} places dispo</b>`;
             addCustomStep(
                 `Roulez vers ${dropoff.address || 'la station'}`,
                 dropoffSub,
                 '🚲'
             );
-            appendRouteSteps(routeBike.legs);
+            appendRouteSteps(routeBike.properties.segments);
 
             addCustomStep(
                 `Marchez vers ${endGeocoded.label}`,
-                `~${Math.round(routeWalk2.duration / 60)} min`,
+                `~${Math.round(routeWalk2.properties.summary.duration / 60)} min`,
                 '🏁'
             );
-            appendRouteSteps(routeWalk2.legs);
+            appendRouteSteps(routeWalk2.properties.segments);
 
             
-            const totalKm = ((routeWalk1.distance + routeBike.distance + routeWalk2.distance) / 1000).toFixed(1);
-            const totalMin = Math.round((routeWalk1.duration + routeBike.duration + routeWalk2.duration) / 60);
+            const totalKm = ((routeWalk1.properties.summary.distance + routeBike.properties.summary.distance + routeWalk2.properties.summary.distance) / 1000).toFixed(1);
+            const totalMin = Math.round((routeWalk1.properties.summary.duration + routeBike.properties.summary.duration + routeWalk2.properties.summary.duration) / 60);
             setStatus(`Total: ${totalKm} km • ~${totalMin} min (🚶+🚲)`);
 
         } catch (err) {
@@ -374,12 +357,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
       
-    
-    
-
-    
-
-
     function togglePanel() {
         elements.panel.classList.toggle('collapsed');
         elements.panelToggleBtn.classList.toggle('collapsed');
