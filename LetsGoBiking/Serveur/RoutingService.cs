@@ -7,6 +7,7 @@ using System.Net;
 using System.Runtime.Remoting.Contexts;
 using System.Text;
 using System.Threading.Tasks;
+using System.Globalization;
 
 namespace Serveur
 {
@@ -61,7 +62,6 @@ namespace Serveur
 
     public class ItineraryRequest
     {
-        public string contractName { get; set; }
         public double originLat { get; set; }
         public double originLng { get; set; }
         public double destLat { get; set; }
@@ -96,8 +96,8 @@ namespace Serveur
             double lat2 = other.Latitude * Math.PI / 180;
             double dLat = (other.Latitude - Latitude) * Math.PI / 180;
             double dLon = (other.Longitude - Longitude) * Math.PI / 180;
-            double a = Math.Sin(dLat/2) * Math.Sin(dLat/2) + Math.Cos(lat1) * Math.Cos(lat2) * Math.Sin(dLon/2) * Math.Sin(dLon/2);
-            double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1-a));
+            double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) + Math.Cos(lat1) * Math.Cos(lat2) * Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+            double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
             return R * c;
         }
     }
@@ -170,38 +170,59 @@ namespace Serveur
                 Console.WriteLine($"Received {context.Request.HttpMethod} {context.Request.Url.AbsolutePath}");
                 try
                 {
-                    if (context.Request.HttpMethod == "POST" && context.Request.Url.AbsolutePath == "/itinerary")
+                    if (context.Request.HttpMethod == "GET" && context.Request.Url.AbsolutePath.TrimEnd('/') == "/itinerary")
                     {
-                        using (var reader = new System.IO.StreamReader(context.Request.InputStream, context.Request.ContentEncoding))
+                        ItineraryRequest req = null;
+                        try
                         {
-                            var body = await reader.ReadToEndAsync();
-                            Console.WriteLine($"Request body: {body}");
-                            ItineraryRequest req = null;
-                            try {
-                                req = JsonConvert.DeserializeObject<ItineraryRequest>(body);
-                            } catch (Exception ex) {
-                                Console.WriteLine($"Deserialization error: {ex.Message}");
-                                context.Response.StatusCode = 400;
-                                var error = Encoding.UTF8.GetBytes("Invalid request body");
-                                context.Response.OutputStream.Write(error, 0, error.Length);
-                                context.Response.OutputStream.Close();
-                                continue;
+                            var query = context.Request.QueryString;
+
+                            if (string.IsNullOrEmpty(query["originLat"]) ||
+                                string.IsNullOrEmpty(query["originLng"]) ||
+                                string.IsNullOrEmpty(query["destLat"]) ||
+                                string.IsNullOrEmpty(query["destLng"]))
+                            {
+                                throw new Exception("Missing required query parameters (originLat, originLng, destLat, destLng).");
                             }
-                            try {
-                                var resp = await ComputeItinerary(req); 
-                                var respJson = JsonConvert.SerializeObject(resp);
-                                context.Response.ContentType = "application/json";
-                                var buffer = Encoding.UTF8.GetBytes(respJson);
-                                context.Response.OutputStream.Write(buffer, 0, buffer.Length);
-                                context.Response.OutputStream.Close();
-                                Console.WriteLine("Response sent.");
-                            } catch (Exception ex) {
-                                Console.WriteLine($"Error in ComputeItinerary: {ex.Message}");
-                                context.Response.StatusCode = 500;
-                                var error = Encoding.UTF8.GetBytes("Internal server error");
-                                context.Response.OutputStream.Write(error, 0, error.Length);
-                                context.Response.OutputStream.Close();
-                            }
+
+                            req = new ItineraryRequest
+                            {
+                                originLat = double.Parse(query["originLat"], CultureInfo.InvariantCulture),
+                                originLng = double.Parse(query["originLng"], CultureInfo.InvariantCulture),
+                                destLat = double.Parse(query["destLat"], CultureInfo.InvariantCulture),
+                                destLng = double.Parse(query["destLng"], CultureInfo.InvariantCulture)
+                                // contractName retiré
+                            };
+                            Console.WriteLine($"Request params: origin=({req.originLat},{req.originLng}), dest=({req.destLat},{req.destLng})");
+
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Parameter parsing error: {ex.Message}");
+                            context.Response.StatusCode = 400; // Bad Request
+                            var error = Encoding.UTF8.GetBytes($"Invalid or missing query parameters: {ex.Message}");
+                            context.Response.OutputStream.Write(error, 0, error.Length);
+                            context.Response.OutputStream.Close();
+                            continue;
+                        }
+
+                        try
+                        {
+                            var resp = await ComputeItinerary(req);
+                            var respJson = JsonConvert.SerializeObject(resp);
+                            context.Response.ContentType = "application/json";
+                            var buffer = Encoding.UTF8.GetBytes(respJson);
+                            context.Response.OutputStream.Write(buffer, 0, buffer.Length);
+                            context.Response.OutputStream.Close();
+                            Console.WriteLine("Response sent.");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error in ComputeItinerary: {ex.Message}");
+                            context.Response.StatusCode = 500;
+                            var error = Encoding.UTF8.GetBytes("Internal server error");
+                            context.Response.OutputStream.Write(error, 0, error.Length);
+                            context.Response.OutputStream.Close();
                         }
                     }
                     else
@@ -213,12 +234,14 @@ namespace Serveur
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Unhandled exception: {ex.Message}");
-                    try {
+                    try
+                    {
                         context.Response.StatusCode = 500;
                         var error = Encoding.UTF8.GetBytes("Internal server error");
                         context.Response.OutputStream.Write(error, 0, error.Length);
                         context.Response.OutputStream.Close();
-                    } catch {}
+                    }
+                    catch { }
                 }
             }
         }

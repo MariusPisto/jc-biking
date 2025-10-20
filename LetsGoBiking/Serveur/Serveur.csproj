@@ -60,6 +60,8 @@
     <Compile Include="Service1.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include=".env" />
+    <None Include=".env.example" />
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
