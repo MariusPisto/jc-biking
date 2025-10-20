@@ -7,7 +7,6 @@ using System.Text;
 
 namespace Proxy
 {
-    // NOTE: You can use the "Rename" command on the "Refactor" menu to change the interface name "IService1" in both code and config file together.
     [ServiceContract]
     public interface IProxyService
     {
@@ -19,7 +18,7 @@ namespace Proxy
     public class APIResponse
     {
         int status;
-        string reponse;
+        string response;
 
         [DataMember]
         public int Status
@@ -29,10 +28,10 @@ namespace Proxy
         }
 
         [DataMember]
-        public string Reponse
+        public string Response
         {
-            get { return reponse; }
-            set { reponse = value; }
+            get { return response; }
+            set { response = value; }
         }
     }
 }
