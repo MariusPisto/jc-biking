@@ -170,7 +170,7 @@ namespace Serveur
                 Console.WriteLine($"Received {context.Request.HttpMethod} {context.Request.Url.AbsolutePath}");
                 try
                 {
-                    if (context.Request.HttpMethod == "GET" && context.Request.Url.AbsolutePath.TrimEnd('/') == "/itinerary")
+                    if (context.Request.HttpMethod == "GET" && context.Request.Url.AbsolutePath == "/itinerary")
                     {
                         ItineraryRequest req = null;
                         try
