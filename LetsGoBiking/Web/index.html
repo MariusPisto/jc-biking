@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Itinéraire</title>
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <div class="itinerary-panel" id="itinerary-panel">
+      <h2>Itinéraire</h2>
+
+      <div class="input-group">
+        <label for="start-autocomplete">Départ</label>
+        <address-autocomplete
+          id="start-autocomplete"
+          placeholder="Adresse de départ"
+        >
+        </address-autocomplete>
+      </div>
+
+      <div class="input-group">
+        <label for="end-autocomplete">Arrivée</label>
+        <address-autocomplete
+          id="end-autocomplete"
+          placeholder="Adresse d'arrivée"
+        >
+        </address-autocomplete>
+      </div>
+
+      <button id="calculate-route-btn">Calculer l'itinéraire</button>
+
+      <div id="results-container">
+        <div id="itinerary-status"></div>
+        <ol id="steps"></ol>
+      </div>
+    </div>
+
+    <button
+      id="panel-toggle-btn"
+      class="panel-toggle-btn"
+      aria-label="Masquer le panneau"
+    >
+      <span class="icon-arrow"></span>
+    </button>
+
+    <button id="view-switch-btn" class="view-switch-btn">Voir la carte</button>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
