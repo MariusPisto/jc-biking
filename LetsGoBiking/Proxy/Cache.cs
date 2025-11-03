@@ -30,9 +30,12 @@ namespace Proxy
             if (response != null)
             {
                 Console.WriteLine($"{url} (Cached)");
+            } else
+            {
+                Console.WriteLine($"{url} (Not Cached)");
             }
 
-            return response;
+                return response;
         }
 
         public void SetRouteCache(string url, APIResponse response)
@@ -68,7 +71,7 @@ namespace Proxy
             };
 
             cache.Set(url, response, policy);
-            Console.WriteLine($"{url} (Cached)");
+            Console.WriteLine($"{url} (Put in cache)");
         }
     }
 }

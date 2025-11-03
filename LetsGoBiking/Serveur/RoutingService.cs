@@ -143,6 +143,14 @@ namespace Serveur
             Task.Run(() => HandleRequests());
         }
 
+        private void AddCorsHeaders(HttpListenerResponse response)
+        {
+            // Allow all origins for now
+            response.Headers.Set("Access-Control-Allow-Origin", "*");
+            response.Headers.Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+            response.Headers.Set("Access-Control-Allow-Headers", "Content-Type, Accept");
+        }
+
         private async Task HandleRequests()
         {
             while (true)
@@ -151,6 +159,15 @@ namespace Serveur
                 Console.WriteLine($"Received {context.Request.HttpMethod} {context.Request.Url.AbsolutePath}");
                 try
                 {
+                    // Handle CORS preflight
+                    if (context.Request.HttpMethod == "OPTIONS")
+                    {
+                        AddCorsHeaders(context.Response);
+                        context.Response.StatusCode = 200;
+                        context.Response.OutputStream.Close();
+                        continue;
+                    }
+
                     if (context.Request.HttpMethod == "GET" && context.Request.Url.AbsolutePath == "/itinerary")
                     {
                         ItineraryRequest req = null;
@@ -172,7 +189,6 @@ namespace Serveur
                                 originLng = double.Parse(query["originLng"], CultureInfo.InvariantCulture),
                                 destLat = double.Parse(query["destLat"], CultureInfo.InvariantCulture),
                                 destLng = double.Parse(query["destLng"], CultureInfo.InvariantCulture)
-                                // contractName retiré
                             };
                             Console.WriteLine($"Request params: origin=({req.originLat},{req.originLng}), dest=({req.destLat},{req.destLng})");
 
@@ -180,6 +196,7 @@ namespace Serveur
                         catch (Exception ex)
                         {
                             Console.WriteLine($"Parameter parsing error: {ex.Message}");
+                            AddCorsHeaders(context.Response);
                             context.Response.StatusCode = 400; // Bad Request
                             byte[] error = Encoding.UTF8.GetBytes($"Invalid or missing query parameters: {ex.Message}");
                             context.Response.OutputStream.Write(error, 0, error.Length);
@@ -191,6 +208,7 @@ namespace Serveur
                         {
                             ItineraryStationsResponse resp = await ComputeItinerary(req);
                             string respJson = JsonConvert.SerializeObject(resp);
+                            AddCorsHeaders(context.Response);
                             context.Response.ContentType = "application/json";
                             byte[] buffer = Encoding.UTF8.GetBytes(respJson);
                             context.Response.OutputStream.Write(buffer, 0, buffer.Length);
@@ -200,6 +218,7 @@ namespace Serveur
                         catch (Exception ex)
                         {
                             Console.WriteLine($"Error in ComputeItinerary: {ex.Message}");
+                            AddCorsHeaders(context.Response);
                             context.Response.StatusCode = 500;
                             byte[] error = Encoding.UTF8.GetBytes("Internal server error");
                             context.Response.OutputStream.Write(error, 0, error.Length);
@@ -208,6 +227,7 @@ namespace Serveur
                     }
                     else
                     {
+                        AddCorsHeaders(context.Response);
                         context.Response.StatusCode = 404;
                         context.Response.Close();
                     }
@@ -215,14 +235,13 @@ namespace Serveur
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Unhandled exception: {ex.Message}");
-                    try
-                    {
+                    try {
+                        AddCorsHeaders(context.Response);
                         context.Response.StatusCode = 500;
                         byte[] error = Encoding.UTF8.GetBytes("Internal server error");
                         context.Response.OutputStream.Write(error, 0, error.Length);
                         context.Response.OutputStream.Close();
-                    }
-                    catch { }
+                    } catch {}
                 }
             }
         }
