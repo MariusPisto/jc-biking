@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ReferenceGroup xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ID="e050d6c1-e321-4535-93b1-7ed648215071" xmlns="urn:schemas-microsoft-com:xml-wcfservicemap">
+  <ClientOptions>
+    <GenerateAsynchronousMethods>false</GenerateAsynchronousMethods>
+    <GenerateTaskBasedAsynchronousMethod>true</GenerateTaskBasedAsynchronousMethod>
+    <EnableDataBinding>true</EnableDataBinding>
+    <ExcludedTypes />
+    <ImportXmlTypes>false</ImportXmlTypes>
+    <GenerateInternalTypes>false</GenerateInternalTypes>
+    <GenerateMessageContracts>false</GenerateMessageContracts>
+    <NamespaceMappings />
+    <CollectionMappings />
+    <GenerateSerializableTypes>true</GenerateSerializableTypes>
+    <Serializer>Auto</Serializer>
+    <UseSerializerForFaults>true</UseSerializerForFaults>
+    <ReferenceAllAssemblies>true</ReferenceAllAssemblies>
+    <ReferencedAssemblies />
+    <ReferencedDataContractTypes />
+    <ServiceContractMappings />
+  </ClientOptions>
+  <MetadataSources>
+    <MetadataSource Address="http://localhost:8090/ProxyService/Proxy" Protocol="http" SourceId="1" />
+  </MetadataSources>
+  <Metadata>
+    <MetadataFile FileName="Proxy.xsd" MetadataType="Schema" ID="afe74148-3fc5-40b0-bb1c-44c17bfdb528" SourceId="1" SourceUrl="http://localhost:8090/ProxyService/Proxy?xsd=xsd1" />
+    <MetadataFile FileName="Proxy.disco" MetadataType="Disco" ID="1c7a3aa5-bcfe-4fae-bcd4-61f80336a0a8" SourceId="1" SourceUrl="http://localhost:8090/ProxyService/Proxy?disco" />
+    <MetadataFile FileName="Proxy1.xsd" MetadataType="Schema" ID="c32fc5cd-6aa0-4551-acef-044b84ae635f" SourceId="1" SourceUrl="http://localhost:8090/ProxyService/Proxy?xsd=xsd0" />
+    <MetadataFile FileName="Proxy2.xsd" MetadataType="Schema" ID="2d3eaab7-771f-4fba-b91c-8347dff57d77" SourceId="1" SourceUrl="http://localhost:8090/ProxyService/Proxy?xsd=xsd2" />
+    <MetadataFile FileName="ProxyService.wsdl" MetadataType="Wsdl" ID="306fc3f6-07ae-4bed-86c9-883994dcdd35" SourceId="1" SourceUrl="http://localhost:8090/ProxyService/Proxy?wsdl" />
+  </Metadata>
+  <Extensions>
+    <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />
+    <ExtensionFile FileName="configuration.svcinfo" Name="configuration.svcinfo" />
+  </Extensions>
+</ReferenceGroup>

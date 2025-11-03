@@ -8,7 +8,6 @@ using System.Text;
 
 namespace Proxy
 {
-    // NOTE: You can use the "Rename" command on the "Refactor" menu to change the class name "Service1" in both code and config file together.
     public class ProxyService : IProxyService
 
     {
@@ -16,13 +15,9 @@ namespace Proxy
 
         private Cache cache = new Cache();
 
-        public string GetData(int value)
-        {
-            return string.Format("You entered: {0}", value);
-        }
-
         public APIResponse Call(string url)
         {
+            Console.WriteLine(url + ": requested");
             APIResponse apiResponse = cache.GetRouteCache(url);
 
             if (apiResponse == null)
@@ -35,7 +30,7 @@ namespace Proxy
                     string responseBody = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 
                     apiResponse.Status = (int)response.StatusCode;
-                    apiResponse.Reponse = responseBody;
+                    apiResponse.Response = responseBody;
 
                     cache.SetRouteCache(url, apiResponse);
                 }
@@ -44,10 +39,12 @@ namespace Proxy
                     Console.WriteLine("\nException Caught!");
                     Console.WriteLine("Message :{0} ", e.Message);
 
+                    apiResponse.Response = e.Message;
                     apiResponse.Status = 500;
                 }
             }
 
+            Console.WriteLine(url + ": sent");
             return apiResponse;
         }
     }

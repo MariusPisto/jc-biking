@@ -8,6 +8,8 @@ using System.Runtime.Remoting.Contexts;
 using System.Text;
 using System.Threading.Tasks;
 using System.Globalization;
+using System.Collections.Specialized;
+using System.ComponentModel;
 
 namespace Serveur
 {
@@ -128,31 +130,10 @@ namespace Serveur
     public class RoutingService
     {
         private readonly HttpListener _listener;
-        private readonly string _jcdecauxApiKey;
-        private readonly string _jcdecauxBaseUrl = "https://api.jcdecaux.com/vls/v3";
-
         public RoutingService(string prefix)
         {
-            _jcdecauxApiKey = LoadApiKey();
             _listener = new HttpListener();
             _listener.Prefixes.Add(prefix);
-        }
-
-        private string LoadApiKey()
-        {
-            var envPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".env");
-            if (File.Exists(envPath))
-            {
-                var lines = File.ReadAllLines(envPath);
-                foreach (var line in lines)
-                {
-                    if (line.StartsWith("JCDECAUX_API_KEY="))
-                    {
-                        return line.Substring("JCDECAUX_API_KEY=".Length).Trim();
-                    }
-                }
-            }
-            throw new Exception("JCDECAUX_API_KEY not found in .env file");
         }
 
         public void Start()
@@ -166,7 +147,7 @@ namespace Serveur
         {
             while (true)
             {
-                var context = await _listener.GetContextAsync();
+                HttpListenerContext context = await _listener.GetContextAsync();
                 Console.WriteLine($"Received {context.Request.HttpMethod} {context.Request.Url.AbsolutePath}");
                 try
                 {
@@ -175,7 +156,7 @@ namespace Serveur
                         ItineraryRequest req = null;
                         try
                         {
-                            var query = context.Request.QueryString;
+                            NameValueCollection query = context.Request.QueryString;
 
                             if (string.IsNullOrEmpty(query["originLat"]) ||
                                 string.IsNullOrEmpty(query["originLng"]) ||
@@ -200,7 +181,7 @@ namespace Serveur
                         {
                             Console.WriteLine($"Parameter parsing error: {ex.Message}");
                             context.Response.StatusCode = 400; // Bad Request
-                            var error = Encoding.UTF8.GetBytes($"Invalid or missing query parameters: {ex.Message}");
+                            byte[] error = Encoding.UTF8.GetBytes($"Invalid or missing query parameters: {ex.Message}");
                             context.Response.OutputStream.Write(error, 0, error.Length);
                             context.Response.OutputStream.Close();
                             continue;
@@ -208,10 +189,10 @@ namespace Serveur
 
                         try
                         {
-                            var resp = await ComputeItinerary(req);
-                            var respJson = JsonConvert.SerializeObject(resp);
+                            ItineraryStationsResponse resp = await ComputeItinerary(req);
+                            string respJson = JsonConvert.SerializeObject(resp);
                             context.Response.ContentType = "application/json";
-                            var buffer = Encoding.UTF8.GetBytes(respJson);
+                            byte[] buffer = Encoding.UTF8.GetBytes(respJson);
                             context.Response.OutputStream.Write(buffer, 0, buffer.Length);
                             context.Response.OutputStream.Close();
                             Console.WriteLine("Response sent.");
@@ -220,7 +201,7 @@ namespace Serveur
                         {
                             Console.WriteLine($"Error in ComputeItinerary: {ex.Message}");
                             context.Response.StatusCode = 500;
-                            var error = Encoding.UTF8.GetBytes("Internal server error");
+                            byte[] error = Encoding.UTF8.GetBytes("Internal server error");
                             context.Response.OutputStream.Write(error, 0, error.Length);
                             context.Response.OutputStream.Close();
                         }
@@ -237,7 +218,7 @@ namespace Serveur
                     try
                     {
                         context.Response.StatusCode = 500;
-                        var error = Encoding.UTF8.GetBytes("Internal server error");
+                        byte[] error = Encoding.UTF8.GetBytes("Internal server error");
                         context.Response.OutputStream.Write(error, 0, error.Length);
                         context.Response.OutputStream.Close();
                     }
@@ -248,17 +229,18 @@ namespace Serveur
 
         private async Task<ItineraryStationsResponse> ComputeItinerary(ItineraryRequest req)
         {
+            JCDecauxAPI api = new JCDecauxAPI();
             string contract = "lyon";
-            var stations = await GetStations(contract);
+            List<Station> stations = await api.GetStations(contract);
 
-            var originCoord = new GeoCoordinate(req.originLat, req.originLng);
-            var closestOriginStation = stations
+            GeoCoordinate originCoord = new GeoCoordinate(req.originLat, req.originLng);
+            Station closestOriginStation = stations
                 .Where(s => s.totalStands != null && s.totalStands.availabilities != null && s.totalStands.availabilities.bikes > 0)
                 .OrderBy(s => originCoord.GetDistanceTo(new GeoCoordinate(s.position.latitude, s.position.longitude)))
                 .FirstOrDefault();
 
-            var destCoord = new GeoCoordinate(req.destLat, req.destLng);
-            var closestDestStation = stations
+            GeoCoordinate destCoord = new GeoCoordinate(req.destLat, req.destLng);
+            Station closestDestStation = stations
                 .Where(s => s.totalStands != null && s.totalStands.availabilities != null && s.totalStands.availabilities.stands > 0)
                 .OrderBy(s => destCoord.GetDistanceTo(new GeoCoordinate(s.position.latitude, s.position.longitude)))
                 .FirstOrDefault();
@@ -304,24 +286,6 @@ namespace Serveur
             // TODO: Implement city geocoding or use a static map
             // For demo, always return true
             return true;
-        }
-
-        private async Task<List<Contact>> GetContracts()
-        {
-            using (var client = new WebClient())
-            {
-                var json = await client.DownloadStringTaskAsync($"{_jcdecauxBaseUrl}/contracts?apiKey={_jcdecauxApiKey}");
-                return JsonConvert.DeserializeObject<List<Contact>>(json);
-            }
-        }
-
-        private async Task<List<Station>> GetStations(string contract)
-        {
-            using (var client = new WebClient())
-            {
-                var json = await client.DownloadStringTaskAsync($"{_jcdecauxBaseUrl}/stations?contract={contract}&apiKey={_jcdecauxApiKey}");
-                return JsonConvert.DeserializeObject<List<Station>>(json);
-            }
         }
     }
 }
