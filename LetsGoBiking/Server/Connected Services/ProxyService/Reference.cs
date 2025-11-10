@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Serveur.ProxyService {
+namespace Server.ProxyService {
     using System.Runtime.Serialization;
     using System;
     
@@ -79,19 +79,19 @@ namespace Serveur.ProxyService {
     public interface IProxyService {
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IProxyService/Call", ReplyAction="http://tempuri.org/IProxyService/CallResponse")]
-        Serveur.ProxyService.APIResponse Call(string url);
+        Server.ProxyService.APIResponse Call(string url);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IProxyService/Call", ReplyAction="http://tempuri.org/IProxyService/CallResponse")]
-        System.Threading.Tasks.Task<Serveur.ProxyService.APIResponse> CallAsync(string url);
+        System.Threading.Tasks.Task<Server.ProxyService.APIResponse> CallAsync(string url);
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    public interface IProxyServiceChannel : Serveur.ProxyService.IProxyService, System.ServiceModel.IClientChannel {
+    public interface IProxyServiceChannel : Server.ProxyService.IProxyService, System.ServiceModel.IClientChannel {
     }
     
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    public partial class ProxyServiceClient : System.ServiceModel.ClientBase<Serveur.ProxyService.IProxyService>, Serveur.ProxyService.IProxyService {
+    public partial class ProxyServiceClient : System.ServiceModel.ClientBase<Server.ProxyService.IProxyService>, Server.ProxyService.IProxyService {
         
         public ProxyServiceClient() {
         }
@@ -112,11 +112,11 @@ namespace Serveur.ProxyService {
                 base(binding, remoteAddress) {
         }
         
-        public Serveur.ProxyService.APIResponse Call(string url) {
+        public Server.ProxyService.APIResponse Call(string url) {
             return base.Channel.Call(url);
         }
         
-        public System.Threading.Tasks.Task<Serveur.ProxyService.APIResponse> CallAsync(string url) {
+        public System.Threading.Tasks.Task<Server.ProxyService.APIResponse> CallAsync(string url) {
             return base.Channel.CallAsync(url);
         }
     }
