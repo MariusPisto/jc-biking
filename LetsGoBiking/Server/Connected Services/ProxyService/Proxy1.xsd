@@ -1,17 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xs:schema xmlns:tns="http://tempuri.org/" elementFormDefault="qualified" targetNamespace="http://tempuri.org/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:import schemaLocation="http://localhost:8090/ProxyService/Proxy?xsd=xsd2" namespace="http://schemas.datacontract.org/2004/07/Proxy" />
-  <xs:element name="Call">
+  <xs:element name="CallGet">
     <xs:complexType>
       <xs:sequence>
         <xs:element minOccurs="0" name="url" nillable="true" type="xs:string" />
       </xs:sequence>
     </xs:complexType>
   </xs:element>
-  <xs:element name="CallResponse">
+  <xs:element name="CallGetResponse">
     <xs:complexType>
       <xs:sequence>
-        <xs:element xmlns:q1="http://schemas.datacontract.org/2004/07/Proxy" minOccurs="0" name="CallResult" nillable="true" type="q1:APIResponse" />
+        <xs:element xmlns:q1="http://schemas.datacontract.org/2004/07/Proxy" minOccurs="0" name="CallGetResult" nillable="true" type="q1:APIResponse" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CallPost">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="url" nillable="true" type="xs:string" />
+        <xs:element minOccurs="0" name="jsonBody" nillable="true" type="xs:string" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CallPostResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q2="http://schemas.datacontract.org/2004/07/Proxy" minOccurs="0" name="CallPostResult" nillable="true" type="q2:APIResponse" />
       </xs:sequence>
     </xs:complexType>
   </xs:element>

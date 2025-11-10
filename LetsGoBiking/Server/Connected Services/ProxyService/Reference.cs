@@ -78,11 +78,17 @@ namespace Server.ProxyService {
     [System.ServiceModel.ServiceContractAttribute(ConfigurationName="ProxyService.IProxyService")]
     public interface IProxyService {
         
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IProxyService/Call", ReplyAction="http://tempuri.org/IProxyService/CallResponse")]
-        Server.ProxyService.APIResponse Call(string url);
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IProxyService/CallGet", ReplyAction="http://tempuri.org/IProxyService/CallGetResponse")]
+        Server.ProxyService.APIResponse CallGet(string url);
         
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IProxyService/Call", ReplyAction="http://tempuri.org/IProxyService/CallResponse")]
-        System.Threading.Tasks.Task<Server.ProxyService.APIResponse> CallAsync(string url);
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IProxyService/CallGet", ReplyAction="http://tempuri.org/IProxyService/CallGetResponse")]
+        System.Threading.Tasks.Task<Server.ProxyService.APIResponse> CallGetAsync(string url);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IProxyService/CallPost", ReplyAction="http://tempuri.org/IProxyService/CallPostResponse")]
+        Server.ProxyService.APIResponse CallPost(string url, string jsonBody);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IProxyService/CallPost", ReplyAction="http://tempuri.org/IProxyService/CallPostResponse")]
+        System.Threading.Tasks.Task<Server.ProxyService.APIResponse> CallPostAsync(string url, string jsonBody);
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
@@ -112,12 +118,20 @@ namespace Server.ProxyService {
                 base(binding, remoteAddress) {
         }
         
-        public Server.ProxyService.APIResponse Call(string url) {
-            return base.Channel.Call(url);
+        public Server.ProxyService.APIResponse CallGet(string url) {
+            return base.Channel.CallGet(url);
         }
         
-        public System.Threading.Tasks.Task<Server.ProxyService.APIResponse> CallAsync(string url) {
-            return base.Channel.CallAsync(url);
+        public System.Threading.Tasks.Task<Server.ProxyService.APIResponse> CallGetAsync(string url) {
+            return base.Channel.CallGetAsync(url);
+        }
+        
+        public Server.ProxyService.APIResponse CallPost(string url, string jsonBody) {
+            return base.Channel.CallPost(url, jsonBody);
+        }
+        
+        public System.Threading.Tasks.Task<Server.ProxyService.APIResponse> CallPostAsync(string url, string jsonBody) {
+            return base.Channel.CallPostAsync(url, jsonBody);
         }
     }
 }

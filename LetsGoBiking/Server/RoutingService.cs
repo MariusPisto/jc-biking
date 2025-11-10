@@ -12,6 +12,8 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using Server.API;
 using Server.Entities;
+using Server.Entities.ORS;
+using Server.Entities.Response;
 
 namespace Server
 {
@@ -95,7 +97,7 @@ namespace Server
                         try
                         {
                             ItineraryStationsResponse resp = await ComputeItinerary(req);
-                            string respJson = JsonConvert.SerializeObject(resp);
+                            string respJson = System.Text.Json.JsonSerializer.Serialize(resp);
                             AddCorsHeaders(context.Response);
                             context.Response.ContentType = "application/json";
                             byte[] buffer = Encoding.UTF8.GetBytes(respJson);
@@ -157,35 +159,113 @@ namespace Server
                 throw new Exception("No available station found for origin or destination.");
             }
 
-            return new ItineraryStationsResponse
+            OpenRouteServiceAPI ORSApi = new OpenRouteServiceAPI();
+
+            Location startLocation = new Location
             {
-                start = new LocationInfo
-                {
-                    latitude = req.originLat,
-                    longitude = req.originLng
-                },
-                pickup = new StationInfo
-                {
-                    address = closestOriginStation.address,
-                    latitude = closestOriginStation.position.latitude,
-                    longitude = closestOriginStation.position.longitude,
-                    availableBikes = closestOriginStation.totalStands.availabilities.bikes,
-                    availableDropPlace = closestOriginStation.totalStands.availabilities.stands
-                },
-                dropoff = new StationInfo
-                {
-                    address = closestDestStation.address,
-                    latitude = closestDestStation.position.latitude,
-                    longitude = closestDestStation.position.longitude,
-                    availableBikes = closestDestStation.totalStands.availabilities.bikes,
-                    availableDropPlace = closestDestStation.totalStands.availabilities.stands
-                },
-                end = new LocationInfo
-                {
-                    latitude = req.destLat,
-                    longitude = req.destLng
-                }
+                latitude = req.originLat,
+                longitude = req.originLng
             };
+
+            Location pickupLocation = new Location
+            {
+                latitude = closestOriginStation.position.latitude,
+                longitude = closestOriginStation.position.longitude
+            };
+
+            Location dropoffLocation = new Location
+            {
+                latitude = closestDestStation.position.latitude,
+                longitude = closestDestStation.position.longitude
+            };
+
+            Location endLocation = new Location
+            {
+                latitude = req.destLat,
+                longitude = req.destLng
+            };
+
+            RouteFeature toPickupRoute = await ORSApi.getRoute(
+                startLocation,
+                pickupLocation, 
+                "foot-walking"
+            );
+
+            RouteFeature bikeRoute = await ORSApi.getRoute(
+                pickupLocation,
+                dropoffLocation,
+                "cycling-regular"
+            );
+
+            RouteFeature toDestinationRoute = await ORSApi.getRoute(
+                dropoffLocation,
+                endLocation,
+                "foot-walking"
+            );
+
+            // Check the time
+            double fullTime = toPickupRoute.Properties.Summary.Duration + bikeRoute.Properties.Summary.Duration + toDestinationRoute.Properties.Summary.Duration;
+
+            // Get only foot
+            RouteFeature onlyFootRoute = await ORSApi.getRoute(
+                startLocation,
+                endLocation,
+                "foot-walking"
+            );
+
+            if (fullTime <= onlyFootRoute.Properties.Summary.Duration)
+            {
+                return new ItineraryStationsResponse
+                    {
+                        walkRoutes = new List<Route>
+                    {
+                        new Route
+                        {
+                            position = 0,
+                            start = startLocation,
+                            end = pickupLocation,
+                            feature = toPickupRoute
+                        },
+                        new Route
+                        {
+                            position = 2,
+                            start = dropoffLocation,
+                            end = endLocation,
+                            feature = toDestinationRoute
+                        }
+                    },
+                        bikeRoutes = new List<BikeRoute>
+                    {
+                        new BikeRoute
+                        {
+                            position = 1,
+                            start = pickupLocation,
+                            end = dropoffLocation,
+                            feature = bikeRoute,
+                            addressStart = closestOriginStation.address,
+                            availableBikes = closestOriginStation.totalStands.availabilities.bikes,
+                            addressEnd = closestDestStation.address,
+                            availableDropPlace = closestDestStation.totalStands.availabilities.stands
+                        },
+                    }
+                };
+            } else
+            {
+                return new ItineraryStationsResponse
+                {
+                    walkRoutes = new List<Route>
+                    {
+                        new Route
+                        {
+                            position = 0,
+                            start = startLocation,
+                            end = endLocation,
+                            feature = onlyFootRoute,
+                        }
+                    }
+                };
+            }
+
         }
 
         private bool IsNearCity(double lat, double lng, string city)

@@ -7,22 +7,41 @@
       <xsd:import schemaLocation="http://localhost:8090/ProxyService/Proxy?xsd=xsd2" namespace="http://schemas.datacontract.org/2004/07/Proxy" />
     </xsd:schema>
   </wsdl:types>
-  <wsdl:message name="IProxyService_Call_InputMessage">
-    <wsdl:part name="parameters" element="tns:Call" />
+  <wsdl:message name="IProxyService_CallGet_InputMessage">
+    <wsdl:part name="parameters" element="tns:CallGet" />
   </wsdl:message>
-  <wsdl:message name="IProxyService_Call_OutputMessage">
-    <wsdl:part name="parameters" element="tns:CallResponse" />
+  <wsdl:message name="IProxyService_CallGet_OutputMessage">
+    <wsdl:part name="parameters" element="tns:CallGetResponse" />
+  </wsdl:message>
+  <wsdl:message name="IProxyService_CallPost_InputMessage">
+    <wsdl:part name="parameters" element="tns:CallPost" />
+  </wsdl:message>
+  <wsdl:message name="IProxyService_CallPost_OutputMessage">
+    <wsdl:part name="parameters" element="tns:CallPostResponse" />
   </wsdl:message>
   <wsdl:portType name="IProxyService">
-    <wsdl:operation name="Call">
-      <wsdl:input wsaw:Action="http://tempuri.org/IProxyService/Call" message="tns:IProxyService_Call_InputMessage" />
-      <wsdl:output wsaw:Action="http://tempuri.org/IProxyService/CallResponse" message="tns:IProxyService_Call_OutputMessage" />
+    <wsdl:operation name="CallGet">
+      <wsdl:input wsaw:Action="http://tempuri.org/IProxyService/CallGet" message="tns:IProxyService_CallGet_InputMessage" />
+      <wsdl:output wsaw:Action="http://tempuri.org/IProxyService/CallGetResponse" message="tns:IProxyService_CallGet_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="CallPost">
+      <wsdl:input wsaw:Action="http://tempuri.org/IProxyService/CallPost" message="tns:IProxyService_CallPost_InputMessage" />
+      <wsdl:output wsaw:Action="http://tempuri.org/IProxyService/CallPostResponse" message="tns:IProxyService_CallPost_OutputMessage" />
     </wsdl:operation>
   </wsdl:portType>
   <wsdl:binding name="BasicHttpBinding_IProxyService" type="tns:IProxyService">
     <soap:binding transport="http://schemas.xmlsoap.org/soap/http" />
-    <wsdl:operation name="Call">
-      <soap:operation soapAction="http://tempuri.org/IProxyService/Call" style="document" />
+    <wsdl:operation name="CallGet">
+      <soap:operation soapAction="http://tempuri.org/IProxyService/CallGet" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CallPost">
+      <soap:operation soapAction="http://tempuri.org/IProxyService/CallPost" style="document" />
       <wsdl:input>
         <soap:body use="literal" />
       </wsdl:input>
