@@ -1,0 +1,120 @@
+/* Fichier : toaster.css */
+
+/* Conteneur principal pour les toasters */
+#toaster-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 320px;
+  z-index: 10000; /* Au-dessus de tout, y compris Leaflet */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Style de base d'un toaster */
+.toaster-notification {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  overflow: hidden; /* Important pour la barre de timer */
+  opacity: 1;
+  transition: all 0.5s cubic-bezier(0.17, 0.84, 0.44, 1);
+  transform: translateX(0);
+}
+
+/* Styles de titre et message */
+.toaster-notification h4 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.toaster-notification p {
+  margin: 0;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.4;
+}
+
+/* Couleurs de bordure basées sur le Level du C# */
+.toaster-notification.warning {
+  border-left: 6px solid #f0ad4e; /* Orange */
+}
+.toaster-notification.high {
+  border-left: 6px solid #d9534f; /* Rouge */
+}
+.toaster-notification.info {
+  border-left: 6px solid #5bc0de; /* Bleu */
+}
+
+/* La barre de timer de 6 secondes */
+.toaster-timer-bar {
+  height: 4px;
+  width: 100%;
+  background-color: #ddd;
+  margin-top: 12px;
+  border-radius: 2px;
+  animation: shrink 6s linear forwards; /* Animation de 2 secondes */
+}
+
+/* Couleurs de la barre de timer */
+.toaster-notification.warning .toaster-timer-bar {
+  background-color: #f0ad4e;
+}
+.toaster-notification.high .toaster-timer-bar {
+  background-color: #d9534f;
+}
+.toaster-notification.info .toaster-timer-bar {
+  background-color: #5bc0de;
+}
+
+/* Animation de la barre */
+@keyframes shrink {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+/* Animation de disparition (appliquée par JS) */
+.toaster-notification.dismiss {
+  opacity: 0;
+  transform: translateX(110%); /* Glisse vers la droite par défaut */
+}
+
+/* Styles pour le bouton de fermeture */
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #888;
+}
+
+/* Pour les écrans mobiles */
+@media (max-width: 768px) {
+  #toaster-container {
+    width: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    border-radius: 0;
+    padding: 10px;
+  }
+
+  .toaster-notification {
+    width: 100%;
+  }
+
+  .toaster-notification.dismiss {
+    transform: translateY(-110%); /* Glisse vers le haut */
+  }
+}

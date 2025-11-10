@@ -6,6 +6,7 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Proxy", "Proxy\Proxy.csproj", "{60B48F68-1997-4536-BF6F-864AC44FBCFD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csproj", "{18BB042A-EE6A-4DEF-A9E6-027FEEC5BBAA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FakeNotification", "FakeNotification\FakeNotification.csproj", "{B9059966-7E0C-43FD-9563-4CCC81A6DE72}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +22,10 @@ Global
 		{18BB042A-EE6A-4DEF-A9E6-027FEEC5BBAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{18BB042A-EE6A-4DEF-A9E6-027FEEC5BBAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{18BB042A-EE6A-4DEF-A9E6-027FEEC5BBAA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9059966-7E0C-43FD-9563-4CCC81A6DE72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9059966-7E0C-43FD-9563-4CCC81A6DE72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9059966-7E0C-43FD-9563-4CCC81A6DE72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9059966-7E0C-43FD-9563-4CCC81A6DE72}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

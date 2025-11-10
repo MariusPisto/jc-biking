@@ -198,4 +198,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
       
     initialize();
+
+    const notificationHeader = document.querySelector('.notification-section h4');
+    if (notificationHeader) {
+        notificationHeader.addEventListener('click', () => {
+            const notificationSection = notificationHeader.closest('.notification-section');
+            if (notificationSection) {
+                notificationSection.classList.toggle('closed');
+            }
+        });
+    }
 });
