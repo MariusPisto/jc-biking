@@ -101,7 +101,12 @@
     <Compile Include="Entities\JCDecaux\Position.cs" />
     <Compile Include="Entities\JCDecaux\Stand.cs" />
     <Compile Include="Entities\JCDecaux\Station.cs" />
+    <Compile Include="Entities\ORS\Geometry.cs" />
+    <Compile Include="Entities\ORS\Properties.cs" />
     <Compile Include="Entities\ORS\RouteFeature.cs" />
+    <Compile Include="Entities\ORS\Segment.cs" />
+    <Compile Include="Entities\ORS\Step.cs" />
+    <Compile Include="Entities\ORS\Summary.cs" />
     <Compile Include="Entities\StationInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
