@@ -160,7 +160,7 @@ namespace Server
                 .OrderBy(s => DestCoord.GetDistanceTo(new GeoCoordinate(s.position.latitude, s.position.longitude)))
                 .FirstOrDefault();
 
-            HashSet<string> PassedContract = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            HashSet<string> UsedContract = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             Location DestinationLocation = new Location
             {
                 latitude = DestCoord.Latitude,
@@ -170,14 +170,13 @@ namespace Server
 
             while (LastStation != ClosestLastDestination)
             {
-                Console.WriteLine($"Loocking the closest station from ({CurrentOriginCoord.Latitude}, {CurrentOriginCoord.Longitude})");
+                Console.WriteLine($"Looking the closest station from ({CurrentOriginCoord.Latitude}, {CurrentOriginCoord.Longitude})");
                 Station ClosestOriginStation = Stations
                     .Where(s =>
                         s.totalStands != null &&
                         s.totalStands.availabilities != null &&
                         s.totalStands.availabilities.bikes > 0 &&
-                        (LastStation == null || LastStation.contractName != s.contractName) &&
-                        !PassedContract.Contains(s.contractName))
+                        !UsedContract.Contains(s.contractName))
                     .OrderBy(s => CurrentOriginCoord.GetDistanceTo(new GeoCoordinate(s.position.latitude, s.position.longitude)))
                     .FirstOrDefault();
 
@@ -189,7 +188,7 @@ namespace Server
 
                 Console.WriteLine($"Origin station is at ({ClosestOriginStation.position.latitude}, {ClosestOriginStation.position.longitude}) in the contract {ClosestOriginStation.contractName}");
 
-                Console.WriteLine($"Checking if quicker to go by foot to the next station without using the last bike route");
+                Console.WriteLine($"Checking if quicklier to go by foot to the next station without using the last bike route");
 
                 Station ClosestDestinationStation = Stations
                     .Where(s => s.totalStands != null && s.totalStands.availabilities != null && s.totalStands.availabilities.stands > 0 && s.contractName == ClosestOriginStation.contractName)
@@ -285,7 +284,7 @@ namespace Server
 
                 CurrentOriginCoord = new GeoCoordinate(DropoffLocation.latitude, DropoffLocation.longitude);
                 LastStation = ClosestDestinationStation;
-                PassedContract.Add(ClosestOriginStation.contractName);
+                UsedContract.Add(ClosestOriginStation.contractName);
             }
 
             if (!destinationReachedByFoot)
