@@ -500,4 +500,6 @@ body.view-map .itinerary-panel {
   border-radius: 1rem;
   font-size: 0.9rem;
   font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
 }

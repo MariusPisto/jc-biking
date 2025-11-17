@@ -14,6 +14,7 @@ using Server.API;
 using Server.Entities;
 using Server.Entities.ORS;
 using Server.Entities.Response;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Server
 {
@@ -138,18 +139,194 @@ namespace Server
 
         private async Task<ItineraryStationsResponse> ComputeItinerary(ItineraryRequest req)
         {
-            JCDecauxAPI api = new JCDecauxAPI();
-            string contract = "lyon";
-            List<Station> stations = await api.GetStations(contract);
+            Console.WriteLine($"Searching itinerary from ({req.originLat}, {req.originLng}) to ({req.destLat}, {req.destLng})");
+
+            JCDecauxAPI Api = new JCDecauxAPI();
+            OpenRouteServiceAPI ORSApi = new OpenRouteServiceAPI();
+
+            List<Station> Stations = await Api.GetAllStations();
+
+            GeoCoordinate OriginCoord = new GeoCoordinate(req.originLat, req.originLng);
+            GeoCoordinate DestCoord = new GeoCoordinate(req.destLat, req.destLng);
+
+            GeoCoordinate CurrentOriginCoord = OriginCoord;
+            Station LastStation = null;
+
+            List<Route> WalkRoutes = new List<Route>();
+            List<BikeRoute> BikeRoutes = new List<BikeRoute>();
+
+            Station ClosestLastDestination = Stations
+                .Where(s => s.totalStands != null && s.totalStands.availabilities != null && s.totalStands.availabilities.stands > 0)
+                .OrderBy(s => DestCoord.GetDistanceTo(new GeoCoordinate(s.position.latitude, s.position.longitude)))
+                .FirstOrDefault();
+
+            HashSet<string> PassedContract = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            Location DestinationLocation = new Location
+            {
+                latitude = DestCoord.Latitude,
+                longitude = DestCoord.Longitude
+            };
+            bool destinationReachedByFoot = false;
+
+            while (LastStation != ClosestLastDestination)
+            {
+                Console.WriteLine($"Loocking the closest station from ({CurrentOriginCoord.Latitude}, {CurrentOriginCoord.Longitude})");
+                Station ClosestOriginStation = Stations
+                    .Where(s =>
+                        s.totalStands != null &&
+                        s.totalStands.availabilities != null &&
+                        s.totalStands.availabilities.bikes > 0 &&
+                        (LastStation == null || LastStation.contractName != s.contractName) &&
+                        !PassedContract.Contains(s.contractName))
+                    .OrderBy(s => CurrentOriginCoord.GetDistanceTo(new GeoCoordinate(s.position.latitude, s.position.longitude)))
+                    .FirstOrDefault();
+
+                if (ClosestOriginStation == null)
+                {
+                    Console.WriteLine("No more origin stations available. Breaking loop.");
+                    break;
+                }
+
+                Console.WriteLine($"Origin station is at ({ClosestOriginStation.position.latitude}, {ClosestOriginStation.position.longitude}) in the contract {ClosestOriginStation.contractName}");
+
+                Console.WriteLine($"Checking if quicker to go by foot to the next station without using the last bike route");
+
+                Station ClosestDestinationStation = Stations
+                    .Where(s => s.totalStands != null && s.totalStands.availabilities != null && s.totalStands.availabilities.stands > 0 && s.contractName == ClosestOriginStation.contractName)
+                    .OrderBy(s => DestCoord.GetDistanceTo(new GeoCoordinate(s.position.latitude, s.position.longitude)))
+                    .FirstOrDefault();
+                if (ClosestDestinationStation == null)
+                {
+                    Console.WriteLine("No destination station available for this contract. Breaking loop.");
+                    break;
+                }
+                Console.WriteLine($"Destination station is at ({ClosestDestinationStation.position.latitude}, {ClosestDestinationStation.position.longitude}) in the contract {ClosestDestinationStation.contractName}");
+
+
+                Location StartLocation = new Location
+                {
+                    latitude = CurrentOriginCoord.Latitude,
+                    longitude = CurrentOriginCoord.Longitude
+                };
+                Location PickupLocation = new Location
+                {
+                    latitude = ClosestOriginStation.position.latitude,
+                    longitude = ClosestOriginStation.position.longitude
+                };
+                Location DropoffLocation = new Location
+                {
+                    latitude = ClosestDestinationStation.position.latitude,
+                    longitude = ClosestDestinationStation.position.longitude
+                };
+
+                RouteFeature WalkDirectRoute = await ORSApi.getRoute(
+                    StartLocation,
+                    DestinationLocation,
+                    "foot-walking"
+                );
+
+                RouteFeature ToPickupRoute = await ORSApi.getRoute(
+                    StartLocation,
+                    PickupLocation,
+                    "foot-walking"
+                );
+                RouteFeature BikeRoute = await ORSApi.getRoute(
+                    PickupLocation,
+                    DropoffLocation,
+                    "cycling-regular"
+                );
+                RouteFeature DropoffToDestinationRoute = await ORSApi.getRoute(
+                    DropoffLocation,
+                    DestinationLocation,
+                    "foot-walking"
+                );
+
+                double mixedDuration =
+                    ToPickupRoute.Properties.Summary.Duration +
+                    BikeRoute.Properties.Summary.Duration +
+                    DropoffToDestinationRoute.Properties.Summary.Duration;
+                double walkDirectDuration = WalkDirectRoute.Properties.Summary.Duration;
+
+                if (walkDirectDuration <= mixedDuration)
+                {
+                    Console.WriteLine("Walking directly to destination is faster. Removing remaining bike routes.");
+                    WalkRoutes.Add(new Route
+                    {
+                        start = StartLocation,
+                        end = DestinationLocation,
+                        feature = WalkDirectRoute
+                    });
+                    destinationReachedByFoot = true;
+                    CurrentOriginCoord = DestCoord;
+                    LastStation = ClosestLastDestination;
+                    break;
+                }
+
+                WalkRoutes.Add( 
+                    new Route
+                    {
+                        start = StartLocation,
+                        end = PickupLocation,
+                        feature = ToPickupRoute
+                    }
+                );
+                BikeRoutes.Add( 
+                    new BikeRoute
+                    {
+                        start = PickupLocation,
+                        end = DropoffLocation,
+                        feature = BikeRoute,
+                        addressStart = ClosestOriginStation.address,
+                        availableBikes = ClosestOriginStation.totalStands.availabilities.bikes,
+                        addressEnd = ClosestDestinationStation.address,
+                        availableDropPlace = ClosestDestinationStation.totalStands.availabilities.stands
+                    }
+                );
+
+                CurrentOriginCoord = new GeoCoordinate(DropoffLocation.latitude, DropoffLocation.longitude);
+                LastStation = ClosestDestinationStation;
+                PassedContract.Add(ClosestOriginStation.contractName);
+            }
+
+            if (!destinationReachedByFoot)
+            {
+                // Add the last walking part
+                Location LastStartLocation = new Location
+                {
+                    latitude = CurrentOriginCoord.Latitude,
+                    longitude = CurrentOriginCoord.Longitude
+                };
+
+                RouteFeature LastWalkRoute = await ORSApi.getRoute(
+                    LastStartLocation,
+                    DestinationLocation,
+                    "foot-walking"
+                );
+
+                WalkRoutes.Add(
+                    new Route
+                    {
+                        start = LastStartLocation,
+                        end = DestinationLocation,
+                        feature = LastWalkRoute
+                    });
+            }
+
+
+            return new ItineraryStationsResponse
+            {
+                walkRoutes = WalkRoutes,
+                bikeRoutes = BikeRoutes,
+            };
 
             GeoCoordinate originCoord = new GeoCoordinate(req.originLat, req.originLng);
-            Station closestOriginStation = stations
+            Station closestOriginStation = Stations
                 .Where(s => s.totalStands != null && s.totalStands.availabilities != null && s.totalStands.availabilities.bikes > 0)
                 .OrderBy(s => originCoord.GetDistanceTo(new GeoCoordinate(s.position.latitude, s.position.longitude)))
                 .FirstOrDefault();
 
             GeoCoordinate destCoord = new GeoCoordinate(req.destLat, req.destLng);
-            Station closestDestStation = stations
+            Station closestDestStation = Stations
                 .Where(s => s.totalStands != null && s.totalStands.availabilities != null && s.totalStands.availabilities.stands > 0)
                 .OrderBy(s => destCoord.GetDistanceTo(new GeoCoordinate(s.position.latitude, s.position.longitude)))
                 .FirstOrDefault();
@@ -158,8 +335,6 @@ namespace Server
             {
                 throw new Exception("No available station found for origin or destination.");
             }
-
-            OpenRouteServiceAPI ORSApi = new OpenRouteServiceAPI();
 
             Location startLocation = new Location
             {
@@ -213,8 +388,7 @@ namespace Server
                 "foot-walking"
             );
 
-            const double ImprovementThreshold = 0.8; // biking route must be 80% or faster
-            if (fullTime <= onlyFootRoute.Properties.Summary.Duration * ImprovementThreshold)
+            if (fullTime <= onlyFootRoute.Properties.Summary.Duration)
             {
                 return new ItineraryStationsResponse
                     {
