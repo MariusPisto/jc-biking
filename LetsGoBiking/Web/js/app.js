@@ -1,7 +1,6 @@
 import './components/AddressAutocomplete.js';
 import { initMap } from './map.js';
 import { geocodeAddress, getItinerary } from './api.js';
-import { getRouteSegments } from './api/openrouteservice.js';
 import { setStatus, appendRouteSteps, addCustomStep, togglePanel, toggleSteps, setView } from './ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -87,85 +86,128 @@ document.addEventListener('DOMContentLoaded', () => {
             ]);
 
             const itineraryData = await getItinerary(startGeocoded, endGeocoded);
-            const { start, pickup, dropoff, end } = itineraryData;
 
-            setStatus(elements.statusEl, 'Calcul des segments d\'itinéraire…');
-            const { routeWalk1, routeBike, routeWalk2 } = await getRouteSegments(start, pickup, dropoff, end);
+            const walkRoutes = itineraryData.walkRoutes || [];
+            const bikeRoutes = itineraryData.bikeRoutes || [];
+
+            if (!Array.isArray(walkRoutes) || !Array.isArray(bikeRoutes)) {
+                throw new Error('Format d\'itinéraire invalide');
+            }
+
+            const allRoutes = [];
+            const maxSegments = Math.max(walkRoutes.length, bikeRoutes.length);
+            for (let i = 0; i < maxSegments; i++) {
+                if (walkRoutes[i]) {
+                    allRoutes.push(walkRoutes[i]);
+                }
+                if (bikeRoutes[i]) {
+                    allRoutes.push(bikeRoutes[i]);
+                }
+            }
+            
+            if (allRoutes.length === 0) {
+                throw new Error('Aucun itinéraire trouvé');
+            }
 
             const routeLines = L.featureGroup();
+            let totalDistance = 0;
+            let totalDuration = 0;
+            let bikeRouteInfo = null;
 
-            const coordsW1 = routeWalk1.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
-            L.polyline(coordsW1, { 
-                color: '#0056b3', 
-                weight: 5, 
-                opacity: 0.8,
-                dashArray: '5, 8' 
-            }).addTo(routeLines);
+            allRoutes.forEach((route, index) => {
+                const isFirst = index === 0;
+                const isLast = index === allRoutes.length - 1;
+                const isBike = route.type === 'bike';
 
-            const coordsBike = routeBike.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
-            L.polyline(coordsBike, { 
-                color: 'var(--primary-color)', 
-                weight: 7, 
-                opacity: 0.9 
-            }).addTo(routeLines);
-              
-            const coordsW2 = routeWalk2.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
-            L.polyline(coordsW2, { 
-                color: '#0056b3', 
-                weight: 5, 
-                opacity: 0.8,
-                dashArray: '5, 8'
-            }).addTo(routeLines);
+                const coords = route.feature.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
+                
+                const polylineOptions = isBike ? {
+                    color: 'var(--primary-color)',
+                    weight: 7,
+                    opacity: 0.9
+                } : {
+                    color: '#0056b3',
+                    weight: 5,
+                    opacity: 0.8,
+                    dashArray: '5, 8'
+                };
 
-            L.marker([start.latitude, start.longitude])
-                .addTo(routeLines)
-                .bindPopup(`<b>Départ</b><br>${startGeocoded.label}`);
+                L.polyline(coords, polylineOptions).addTo(routeLines);
 
-            L.marker([pickup.latitude, pickup.longitude])
-                .addTo(routeLines)
-                .bindPopup(`<b>🚲 Station de prise</b><br>${pickup.address}<br><b>Vélos dispo: ${pickup.availableBikes}</b>`);
+                if (isFirst) {
+                    L.marker([route.start.latitude, route.start.longitude])
+                        .addTo(routeLines)
+                        .bindPopup(`<b>Départ</b><br>${startGeocoded.label}`);
+                }
 
-            L.marker([dropoff.latitude, dropoff.longitude])
-                .addTo(routeLines)
-                .bindPopup(`<b>🅿️ Station de rendu</b><br>${dropoff.address || 'Adresse inconnue'}<br><b>Places dispo: ${dropoff.availableDropPlace}</b>`);
+                if (isLast) {
+                    L.marker([route.end.latitude, route.end.longitude])
+                        .addTo(routeLines)
+                        .bindPopup(`<b>Arrivée</b><br>${endGeocoded.label}`);
+                }
 
-            L.marker([end.latitude, end.longitude])
-                .addTo(routeLines)
-                .bindPopup(`<b>Arrivée</b><br>${endGeocoded.label}`);
+                if (isBike) {
+                    bikeRouteInfo = route;
+                    
+                    L.marker([route.start.latitude, route.start.longitude])
+                        .addTo(routeLines)
+                        .bindPopup(`<b>🚲 Station de prise</b><br>${route.addressStart || 'Adresse inconnue'}<br><b>Vélos dispo: ${route.availableBikes || 'N/A'}</b>`);
+                    
+                    L.marker([route.end.latitude, route.end.longitude])
+                        .addTo(routeLines)
+                        .bindPopup(`<b>🅿️ Station de rendu</b><br>${route.addressEnd || 'Adresse inconnue'}<br><b>Places dispo: ${route.availableDropPlace || 'N/A'}</b>`);
+                }
+
+                totalDistance += route.feature.properties.summary.distance;
+                totalDuration += route.feature.properties.summary.duration;
+            });
 
             routeLines.addTo(routeLayerGroup);
             currentMap.fitBounds(routeLines.getBounds().pad(0.15));
 
-            elements.stepsEl.innerHTML = ''; 
-              
-            const pickupSub = `~${Math.round(routeWalk1.properties.summary.duration / 60)} min | <b>${pickup.availableBikes} vélos dispo</b>`;
-            addCustomStep(
-                elements.stepsEl,
-                `Marchez vers ${pickup.address || 'la station'}`,
-                pickupSub,
-                '🚶'
-            );
-            appendRouteSteps(elements.stepsEl, routeWalk1.properties.segments);
+            elements.stepsEl.innerHTML = '';
+            
+            allRoutes.forEach((route, index) => {
+                const isBike = route.type === 'bike';
+                const isWalking = route.type === 'simple';
+                const durationMin = Math.round(route.feature.properties.summary.duration / 60);
+                const isFirst = index === 0;
+                const isLast = index === allRoutes.length - 1;
+                
+                if (isWalking) {
+                    let destinationText = 'la destination';
+                    if (isFirst && bikeRouteInfo) {
+                        destinationText = bikeRouteInfo.addressStart || 'la station de prise';
+                    } else if (isLast) {
+                        destinationText = endGeocoded.label;
+                    }
+                    
+                    const icon = isFirst ? '🚶' : '🏁';
+                    const subtext = isFirst && bikeRouteInfo 
+                        ? `~${durationMin} min | <b>${bikeRouteInfo.availableBikes || 'N/A'} vélos dispo</b>`
+                        : `~${durationMin} min`;
+                    
+                    addCustomStep(
+                        elements.stepsEl,
+                        `Marchez vers ${destinationText}`,
+                        subtext,
+                        icon
+                    );
+                } else if (isBike) {
+                    const subtext = `~${durationMin} min | <b>${route.availableDropPlace || 'N/A'} places dispo</b>`;
+                    addCustomStep(
+                        elements.stepsEl,
+                        `Roulez vers ${route.addressEnd || 'la station de rendu'}`,
+                        subtext,
+                        '🚲'
+                    );
+                }
+                
+                appendRouteSteps(elements.stepsEl, route.feature.properties.segments);
+            });
 
-            const dropoffSub = `~${Math.round(routeBike.properties.summary.duration / 60)} min | <b>${dropoff.availableDropPlace} places dispo</b>`;
-            addCustomStep(
-                elements.stepsEl,
-                `Roulez vers ${dropoff.address || 'la station'}`,
-                dropoffSub,
-                '🚲'
-            );
-            appendRouteSteps(elements.stepsEl, routeBike.properties.segments);
-
-            addCustomStep(
-                elements.stepsEl,
-                `Marchez vers ${endGeocoded.label}`,
-                `~${Math.round(routeWalk2.properties.summary.duration / 60)} min`,
-                '🏁'
-            );
-            appendRouteSteps(elements.stepsEl, routeWalk2.properties.segments);
-
-            const totalKm = ((routeWalk1.properties.summary.distance + routeBike.properties.summary.distance + routeWalk2.properties.summary.distance) / 1000).toFixed(1);
-            const totalMin = Math.round((routeWalk1.properties.summary.duration + routeBike.properties.summary.duration + routeWalk2.properties.summary.duration) / 60);
+            const totalKm = (totalDistance / 1000).toFixed(1);
+            const totalMin = Math.round(totalDuration / 60);
             setStatus(elements.statusEl, `Total: ${totalKm} km • ~${totalMin} min (🚶+🚲)`);
 
         } catch (err) {

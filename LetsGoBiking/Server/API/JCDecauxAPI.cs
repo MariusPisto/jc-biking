@@ -24,7 +24,7 @@ namespace Server.API
 
         public async Task<List<Contract>> GetContracts()
         {
-            APIResponse response = await client.CallAsync($"{_jcdecauxBaseUrl}/contracts?apiKey={_jcdecauxApiKey}");
+            APIResponse response = await client.CallGetAsync($"{_jcdecauxBaseUrl}/contracts?apiKey={_jcdecauxApiKey}");
             if (response.Status != 200)
             {
                 return null;
@@ -34,7 +34,7 @@ namespace Server.API
 
         public async Task<List<Station>> GetStations(string contract)
         {
-            APIResponse response = await client.CallAsync($"{_jcdecauxBaseUrl}/stations?contract={contract}&apiKey={_jcdecauxApiKey}");
+            APIResponse response = await client.CallGetAsync($"{_jcdecauxBaseUrl}/stations?contract={contract}&apiKey={_jcdecauxApiKey}");
             if (response.Status != 200)
             {
                 return null;

@@ -15,7 +15,7 @@ namespace Proxy
 
         private Cache cache = new Cache();
 
-        public APIResponse Call(string url)
+        public APIResponse CallGet(string url)
         {
             Console.WriteLine(url + ": requested");
             APIResponse apiResponse = cache.GetRouteCache(url);
@@ -45,6 +45,46 @@ namespace Proxy
             }
 
             Console.WriteLine(url + ": sent");
+            return apiResponse;
+        }
+
+        public APIResponse CallPost(string url, string jsonBody)
+        {
+            Console.WriteLine("POST " + url + ": requested");
+
+            string cacheKey = url + jsonBody;
+
+            APIResponse apiResponse = cache.GetRouteCache(cacheKey);
+
+            if (apiResponse == null)
+            {
+                apiResponse = new APIResponse();
+                try
+                {
+                    HttpContent content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+                    HttpResponseMessage response = client.PostAsync(url, content).GetAwaiter().GetResult();
+                    response.EnsureSuccessStatusCode();
+                    string responseBody = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+
+                    apiResponse.Status = (int)response.StatusCode;
+                    apiResponse.Response = responseBody;
+
+                    cache.SetRouteCache(cacheKey, apiResponse);
+                }
+                catch (HttpRequestException e)
+                {
+                    Console.WriteLine("\nException Caught!");
+                    Console.WriteLine("Message :{0} ", e.Message);
+                    apiResponse.Response = e.Message;
+                    apiResponse.Status = 500;
+                }
+            }
+            else
+            {
+                Console.WriteLine("POST " + url + ": retrieved from cache");
+            }
+
+            Console.WriteLine("POST " + url + ": sent");
             return apiResponse;
         }
     }

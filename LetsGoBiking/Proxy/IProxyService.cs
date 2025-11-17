@@ -11,7 +11,10 @@ namespace Proxy
     public interface IProxyService
     {
         [OperationContract]
-        APIResponse Call(String url);
+        APIResponse CallGet(String url);
+
+        [OperationContract]
+        APIResponse CallPost(string url, string jsonBody);
     }
 
     [DataContract]

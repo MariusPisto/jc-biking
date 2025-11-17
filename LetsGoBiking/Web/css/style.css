@@ -126,10 +126,11 @@ html {
     border-right: 2px solid var(--text-dark);
     transform: rotate(45deg);
     transition: transform 0.3s ease;
+    transform: rotate(-135deg);
   }
 
   .panel-toggle-btn.collapsed .icon-arrow {
-    transform: rotate(-135deg);
+    transform: rotate(45deg);
   }
 }
 
@@ -227,6 +228,7 @@ body.view-map .itinerary-panel {
   display: flex;
   align-items: center;
   justify-content: center;
+  transform: rotate(-90deg);
 }
 .ac-input {
   width: 100%;
@@ -245,7 +247,7 @@ body.view-map .itinerary-panel {
   height: 8px;
   border-left: 2px solid var(--text-dark);
   border-bottom: 2px solid var(--text-dark);
-  transform: rotate(-45deg);
+  transform: rotate(45deg);
   transition: transform 0.3s ease;
 }
 
@@ -439,7 +441,7 @@ body.view-map .itinerary-panel {
 }
 
 #results-container.collapsed #itinerary-status::after {
-  transform: rotate(135deg);
+  transform: rotate(45deg);
   margin-top: -3px;
 }
 
