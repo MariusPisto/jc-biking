@@ -221,14 +221,12 @@ namespace Server
                     {
                         new Route
                         {
-                            position = 0,
                             start = startLocation,
                             end = pickupLocation,
                             feature = toPickupRoute
                         },
                         new Route
                         {
-                            position = 2,
                             start = dropoffLocation,
                             end = endLocation,
                             feature = toDestinationRoute
@@ -238,7 +236,6 @@ namespace Server
                     {
                         new BikeRoute
                         {
-                            position = 1,
                             start = pickupLocation,
                             end = dropoffLocation,
                             feature = bikeRoute,
@@ -257,7 +254,6 @@ namespace Server
                     {
                         new Route
                         {
-                            position = 0,
                             start = startLocation,
                             end = endLocation,
                             feature = onlyFootRoute,

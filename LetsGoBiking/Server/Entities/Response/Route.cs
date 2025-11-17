@@ -11,7 +11,6 @@ namespace Server.Entities.Response
     public class Route
     {
         public virtual string type { get; } = "simple";
-        public int position { get; set; }
         public Location start { get; set; }
         public Location end { get; set; }
         public RouteFeature feature { get; set; }

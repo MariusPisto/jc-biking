@@ -94,7 +94,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Format d\'itinéraire invalide');
             }
 
-            const allRoutes = [...walkRoutes, ...bikeRoutes].sort((a, b) => (a.position || 0) - (b.position || 0));
+            const allRoutes = [];
+            const maxSegments = Math.max(walkRoutes.length, bikeRoutes.length);
+            for (let i = 0; i < maxSegments; i++) {
+                if (walkRoutes[i]) {
+                    allRoutes.push(walkRoutes[i]);
+                }
+                if (bikeRoutes[i]) {
+                    allRoutes.push(bikeRoutes[i]);
+                }
+            }
             
             if (allRoutes.length === 0) {
                 throw new Error('Aucun itinéraire trouvé');
