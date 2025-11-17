@@ -213,7 +213,8 @@ namespace Server
                 "foot-walking"
             );
 
-            if (fullTime <= onlyFootRoute.Properties.Summary.Duration)
+            const double ImprovementThreshold = 0.8; // biking route must be 80% or faster
+            if (fullTime <= onlyFootRoute.Properties.Summary.Duration * ImprovementThreshold)
             {
                 return new ItineraryStationsResponse
                     {
