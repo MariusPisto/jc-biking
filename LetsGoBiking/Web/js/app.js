@@ -6,11 +6,13 @@ import { setStatus, appendRouteSteps, addCustomStep, togglePanel, toggleSteps, s
 document.addEventListener('DOMContentLoaded', () => {
     let currentMap = null;
     let routeLayerGroup = null;
+    const DEMO_MODE_KEY = 'itinerary_demo_mode';
 
     const elements = {
         startAC: document.getElementById('start-autocomplete'),
         endAC: document.getElementById('end-autocomplete'),
         calculateBtn: document.getElementById('calculate-route-btn'),
+        demoBtn: document.getElementById('demo-btn'),
         resetBtn: document.getElementById('reset-route-btn'),
         statusEl: document.getElementById('itinerary-status'),
         stepsEl: document.getElementById('steps'),
@@ -27,8 +29,16 @@ document.addEventListener('DOMContentLoaded', () => {
         
         elements.panelToggleBtn.addEventListener('click', () => togglePanel(elements.panel, elements.panelToggleBtn, currentMap));
         elements.statusEl.addEventListener('click', () => toggleSteps(elements.resultsContainer));
-        elements.calculateBtn.addEventListener('click', handleRouteCalculation);
-        elements.resetBtn.addEventListener('click', resetRoute);   
+        elements.calculateBtn.addEventListener('click', () => {
+            localStorage.removeItem(DEMO_MODE_KEY);
+            handleRouteCalculation();
+        });
+        elements.demoBtn.addEventListener('click', () => {
+            elements.startAC.value = 'Bruxelles';
+            elements.endAC.value = 'Luxembourg';
+            localStorage.setItem(DEMO_MODE_KEY, 'true');
+            handleRouteCalculation();
+        });
         elements.viewSwitchBtn.addEventListener('click', toggleView);
 
         const initialStart = localStorage.getItem('itinerary_start');
@@ -55,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleRouteCalculation() {
+        const isDemo = localStorage.getItem(DEMO_MODE_KEY) === 'true';
         const startText = elements.startAC.value;
         const endText = elements.endAC.value;
 
@@ -67,6 +78,10 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('itinerary_end', endText);
 
         await buildRoute(startText, endText);
+        
+        if (isDemo) {
+            localStorage.removeItem(DEMO_MODE_KEY);
+        }
         
         if (window.innerWidth < 768) {
             setView('map', currentMap, elements.viewSwitchBtn);
@@ -208,7 +223,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const totalKm = (totalDistance / 1000).toFixed(1);
             const totalMin = Math.round(totalDuration / 60);
-            setStatus(elements.statusEl, `Total: ${totalKm} km • ~${totalMin} min (🚶+🚲)`);
+            const modeIcons = bikeRoutes.length > 0 ? '🚶+🚲' : '🚶';
+            setStatus(elements.statusEl, `Total: ${totalKm} km • ~${totalMin} min (${modeIcons})`);
 
         } catch (err) {
             console.error('Erreur lors du calcul d\'itinéraire:', err);
@@ -228,6 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         localStorage.removeItem('itinerary_start');
         localStorage.removeItem('itinerary_end');
+        localStorage.removeItem(DEMO_MODE_KEY);
 
         if (window.innerWidth < 768) {
             setView('panel', currentMap, elements.viewSwitchBtn);
