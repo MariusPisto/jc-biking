@@ -20,7 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
         panel: document.getElementById('itinerary-panel'),
         panelToggleBtn: document.getElementById('panel-toggle-btn'),
         resultsContainer: document.getElementById('results-container'),
-        viewSwitchBtn: document.getElementById('view-switch-btn')
+        viewSwitchBtn: document.getElementById('view-switch-btn'),
+        loader: document.getElementById('loader')
     };
 
     function initialize() {
@@ -90,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function buildRoute(startText, endText) {
         try {
+            elements.loader.style.display = 'block';
             setStatus(elements.statusEl, 'Recherche de l\'itinéraire vélo…');
             elements.stepsEl.innerHTML = ''; 
             elements.resultsContainer.classList.remove('collapsed');
@@ -229,6 +231,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             console.error('Erreur lors du calcul d\'itinéraire:', err);
             setStatus(elements.statusEl, 'Erreur: ' + (err.message || 'échec du chargement'), 'error');
+        } finally {
+            elements.loader.style.display = 'none';
         }
     }
       
