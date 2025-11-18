@@ -1,30 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Server.Entities.ORS
 {
+    [DataContract]
     public class Step
     {
-        [JsonPropertyName("distance")]
+        [DataMember(Name = "distance")]
         public double Distance { get; set; }
 
-        [JsonPropertyName("duration")]
+        [DataMember(Name = "duration")]
         public double Duration { get; set; }
 
-        [JsonPropertyName("type")]
+        [DataMember(Name = "type")]
         public int Type { get; set; }
 
-        [JsonPropertyName("instruction")]
+        [DataMember(Name = "instruction")]
         public string Instruction { get; set; }
 
-        [JsonPropertyName("name")]
+        [DataMember(Name = "name")]
         public string Name { get; set; }
 
-        [JsonPropertyName("way_points")]
+        [DataMember(Name = "way_points")]
         public List<int> WayPoints { get; set; }
     }
 }

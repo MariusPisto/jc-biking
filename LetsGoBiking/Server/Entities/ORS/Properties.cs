@@ -1,21 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Server.Entities.ORS
 {
+    [DataContract]
     public class Properties
     {
-        [JsonPropertyName("segments")]
+        [DataMember(Name = "segments")]
         public List<Segment> Segments { get; set; }
 
-        [JsonPropertyName("way_points")]
+        [DataMember(Name = "way_points")]
         public List<int> WayPoints { get; set; }
 
-        [JsonPropertyName("summary")]
+        [DataMember(Name = "summary")]
         public Summary Summary { get; set; }
     }
 }
