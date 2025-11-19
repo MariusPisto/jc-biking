@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const elements = {
         startAC: document.getElementById('start-autocomplete'),
         endAC: document.getElementById('end-autocomplete'),
+        swapAddressesBtn: document.getElementById('swap-addresses-btn'),
         calculateBtn: document.getElementById('calculate-route-btn'),
         demoBtn: document.getElementById('demo-btn'),
         resetBtn: document.getElementById('reset-route-btn'),
@@ -41,6 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
             handleRouteCalculation();
         });
         elements.viewSwitchBtn.addEventListener('click', toggleView);
+        elements.swapAddressesBtn.addEventListener('click', swapAddresses);
+        elements.resetBtn.addEventListener('click', resetRoute);
 
         const initialStart = localStorage.getItem('itinerary_start');
         const initialEnd = localStorage.getItem('itinerary_end');
@@ -63,6 +66,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 setView('panel', currentMap, elements.viewSwitchBtn);
             }
         }
+    }
+
+    function swapAddresses() {
+        this.classList.toggle('rotated');
+        const startValue = elements.startAC.value;
+        elements.startAC.value = elements.endAC.value;
+        elements.endAC.value = startValue;
     }
 
     async function handleRouteCalculation() {
@@ -91,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function buildRoute(startText, endText) {
         try {
-            elements.loader.style.display = 'block';
+            elements.loader.classList.remove('hidden');
             setStatus(elements.statusEl, 'Recherche de l\'itinéraire vélo…');
             elements.stepsEl.innerHTML = ''; 
             elements.resultsContainer.classList.remove('collapsed');
@@ -168,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     L.marker([route.start.latitude, route.start.longitude])
                         .addTo(routeLines)
-                        .bindPopup(`<b>🚲 Station de prise</b><br>${route.addressStart || 'Adresse inconnue'}<br><b>Vélos dispo: ${route.availableBikes || 'N/A'}</b>`);
+                                                .bindPopup(`<b>🚲 Station de prise</b><br>${route.addressStart || 'Adresse inconnue'}<br><b>Vélos dispo: ${route.availableBikes || 'N/A'}</b>`);
                     
                     L.marker([route.end.latitude, route.end.longitude])
                         .addTo(routeLines)
@@ -232,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Erreur lors du calcul d\'itinéraire:', err);
             setStatus(elements.statusEl, 'Erreur: ' + (err.message || 'échec du chargement'), 'error');
         } finally {
-            elements.loader.style.display = 'none';
+            elements.loader.classList.add('hidden');
         }
     }
       
