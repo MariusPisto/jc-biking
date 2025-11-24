@@ -1,24 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Server.Entities.ORS
 {
+    [DataContract]
     public class FeatureCollection
     {
-        [JsonPropertyName("type")]
+        [DataMember(Name = "type")]
         public string Type { get; set; }
 
-        [JsonPropertyName("bbox")]
+        [DataMember(Name = "bbox")]
         public List<double> Bbox { get; set; }
 
-        [JsonPropertyName("features")]
+        [DataMember(Name = "features")]
         public List<RouteFeature> Features { get; set; }
 
-        [JsonPropertyName("metadata")]
+        [DataMember(Name = "metadata")]
         public Metadata Metadata { get; set; }
     }
 }

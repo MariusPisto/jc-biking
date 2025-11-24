@@ -1,14 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Server.Entities
 {
+    [DataContract]
     public class Location
     {
-        public double latitude { get; set; }
-        public double longitude { get; set; }
+        [DataMember(Name = "latitude")]
+        public double Latitude { get; set; }
+        
+        [DataMember(Name = "longitude")]
+        public double Longitude { get; set; }
     }
 }
