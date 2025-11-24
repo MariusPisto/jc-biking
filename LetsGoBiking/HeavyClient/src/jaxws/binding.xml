@@ -1,0 +1,17 @@
+<jaxb:bindings version="3.0"
+               xmlns:jaxb="https://jakarta.ee/xml/ns/jaxb"
+               xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <jaxb:bindings schemaLocation="http://localhost:8733/?xsd=xsd2" node="/xs:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="com.heavyclient.generated.response"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="http://localhost:8733/?xsd=xsd4" node="/xs:schema">
+        <jaxb:schemaBindings>
+            <jaxb:package name="com.heavyclient.generated.ors"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+</jaxb:bindings>
