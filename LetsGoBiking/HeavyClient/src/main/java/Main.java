@@ -206,8 +206,9 @@ public class Main {
                     var resp = get();
                     processResponse(resp);
                 } catch (Exception ex) {
-                    System.out.println(ex.getMessage());
-                    JOptionPane.showMessageDialog(null, "Error fetching route: " + ex.getMessage());
+                    ex.printStackTrace();
+                    String msg = ex.getMessage() != null ? ex.getMessage() : "Unknown error";
+                    JOptionPane.showMessageDialog(null, "Error fetching route: " + msg);
                 }
             }
         };
