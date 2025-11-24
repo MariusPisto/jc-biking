@@ -1,12 +1,25 @@
+export async function searchAddresses(query) {
+    // Call the backend server which calls the proxy -> Geoapify
+    const url = `http://localhost:8733/api/addresses?text=${encodeURIComponent(query)}`;
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Échec de la recherche');
+        const data = await res.json();
+        return data.map(addr => ({
+            label: addr.Label,
+            lat: addr.Lat,
+            lon: addr.Lon
+        }));
+    } catch (e) {
+        console.error("Error fetching addresses:", e);
+        return [];
+    }
+}
+
 export async function geocodeAddress(address) {
-    const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(address)}&limit=1`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Échec du géocodage');
-    const data = await res.json();
-    if (!data.features || !data.features.length) throw new Error(`Adresse introuvable: ${address}`);
-    const { coordinates } = data.features[0].geometry;
-    const { label } = data.features[0].properties;
-    return { lat: coordinates[1], lon: coordinates[0], label };
+    const results = await searchAddresses(address);
+    if (!results.length) throw new Error(`Adresse introuvable: ${address}`);
+    return results[0];
 }
 
 export async function getItinerary(start, end) {

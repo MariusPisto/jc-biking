@@ -1,23 +1,25 @@
+import { searchAddresses } from '../api.js';
+
 export class AddressAutocomplete extends HTMLElement {
     constructor() {
         super();
-          
+
         this.wrapper = document.createElement('div');
         this.wrapper.className = 'ac-wrapper';
-          
+
         this.input = document.createElement('input');
         this.input.type = 'text';
         this.input.autocomplete = 'off';
         this.input.className = 'ac-input';
-        
+
         this.suggestions = document.createElement('ul');
         this.suggestions.className = 'ac-suggestions';
         this.suggestions.hidden = true;
-        
+
         this.wrapper.appendChild(this.input);
         this.wrapper.appendChild(this.suggestions);
         this.appendChild(this.wrapper);
-        
+
         this.debounceTimeout = null;
     }
 
@@ -42,15 +44,14 @@ export class AddressAutocomplete extends HTMLElement {
             this.hideSuggestions();
             return;
         }
-        this.debounceTimeout = setTimeout(() => this.fetchSuggestions(value), 300);
+        this.debounceTimeout = setTimeout(() => this.fetchSuggestions(value), 1000);
     }
 
     fetchSuggestions(query) {
         this.setLoading(true);
-        fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(query)}&limit=5`)
-            .then(r => r.json())
-            .then(data => {
-                this.showSuggestions(data.features.map(f => f.properties.label));
+        searchAddresses(query)
+            .then(results => {
+                this.showSuggestions(results.map(r => r.label));
             })
             .catch(() => this.hideSuggestions())
             .finally(() => this.setLoading(false));

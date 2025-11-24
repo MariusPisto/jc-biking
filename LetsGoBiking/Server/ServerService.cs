@@ -224,5 +224,31 @@ namespace Server
                 throw; // Re-throw to let WCF handle it
             }
         }
+        public async Task<List<Address>> GetAddressesAsync(string text)
+        {
+            try
+            {
+                if (WebOperationContext.Current != null)
+                {
+                    WebOperationContext.Current.OutgoingResponse.Headers.Add("Access-Control-Allow-Origin", "*");
+                }
+
+                Console.WriteLine($"Searching addresses for: {text}");
+                GeoapifyAPI api = new GeoapifyAPI();
+                var features = await api.GetFeatures(text);
+
+                return features.Select(f => new Address
+                {
+                    Label = f.Properties.Formatted,
+                    Lat = f.Geometry.Coordinates[1],
+                    Lon = f.Geometry.Coordinates[0]
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetAddressesAsync: {ex.Message}");
+                return new List<Address>();
+            }
+        }
     }
 }

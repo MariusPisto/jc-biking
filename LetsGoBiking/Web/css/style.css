@@ -533,41 +533,62 @@ body.view-map .itinerary-panel {
   padding-right: 20px;
 }
 
+#itinerary-status::before,
 #itinerary-status::after {
   content: "";
   position: absolute;
-  right: 4px;
+  right: 8px;
+  background-color: currentColor;
+  border-radius: 1px;
+}
+
+#itinerary-status::before {
+  width: 14px;
+  height: 2.5px;
   top: 50%;
-  margin-top: -6px;
-  width: 8px;
-  height: 8px;
-  border-left: 2px solid var(--text-light);
-  border-bottom: 2px solid var(--text-light);
-  transform: rotate(-45deg);
-  transition: transform 0.3s ease;
+  left: auto;
+  transform: translateY(-50%);
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+#itinerary-status::after {
+  width: 2.5px;
+  height: 14px;
+  top: 50%;
+  left: auto;
+  transform: translateY(-50%);
+  transform-origin: center;
+  transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  color: var(--text-light);
 }
 
 #results-container.collapsed #itinerary-status::after {
-  transform: rotate(45deg);
-  margin-top: -3px;
+  transform: translateY(-50%) scaleY(0) rotate(90deg);
+}
+
+#results-container:not(.collapsed) #itinerary-status::after {
+  transform: translateY(-50%) translateX(-250%) scaleY(1) rotate(0deg);
 }
 
 #steps {
   list-style: none;
   padding: 0;
   margin: 0;
-  margin-top: 1rem;
+  margin-top: 0;
   overflow: hidden;
-  opacity: 1;
+  opacity: 0;
+  max-height: 0;
+  pointer-events: none;
   transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out,
     margin-top 0.4s ease-in-out;
 }
 
+/* When .collapsed is present the list is visible (inverted semantics) */
 #results-container.collapsed #steps {
-  max-height: 0;
-  opacity: 0;
-  margin-top: 0;
-  pointer-events: none;
+  max-height: 1000px; /* large enough to show content smoothly */
+  opacity: 1;
+  margin-top: 1rem;
+  pointer-events: auto;
 }
 
 .step-item {
