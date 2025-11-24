@@ -10,11 +10,19 @@ export class AddressAutocomplete extends HTMLElement {
         this.input.autocomplete = 'off';
         this.input.className = 'ac-input';
         
+        this.clearBtn = document.createElement('button');
+        this.clearBtn.type = 'button';
+        this.clearBtn.className = 'ac-clear';
+        this.clearBtn.setAttribute('aria-label', 'Effacer le champ');
+        this.clearBtn.textContent = '×';
+        this.clearBtn.hidden = true;
+
         this.suggestions = document.createElement('ul');
         this.suggestions.className = 'ac-suggestions';
         this.suggestions.hidden = true;
         
         this.wrapper.appendChild(this.input);
+        this.wrapper.appendChild(this.clearBtn);
         this.wrapper.appendChild(this.suggestions);
         this.appendChild(this.wrapper);
         
@@ -27,16 +35,20 @@ export class AddressAutocomplete extends HTMLElement {
         }
         this.input.addEventListener('input', (e) => this.onInput(e));
         this.input.addEventListener('blur', () => setTimeout(() => this.hideSuggestions(), 200));
+        this.clearBtn.addEventListener('click', () => this.clearInput());
         this.suggestions.addEventListener('mousedown', (e) => {
             const li = e.target.closest('li');
             if (li && li.dataset.fulladdress) {
                 this.selectSuggestion(li.dataset.fulladdress);
             }
         });
+
+        this.updateClearButtonVisibility();
     }
 
     onInput(e) {
         const value = e.target.value.trim();
+        this.updateClearButtonVisibility();
         if (this.debounceTimeout) clearTimeout(this.debounceTimeout);
         if (!value) {
             this.hideSuggestions();
@@ -79,6 +91,7 @@ export class AddressAutocomplete extends HTMLElement {
     selectSuggestion(address) {
         this.input.value = address;
         this.hideSuggestions();
+        this.updateClearButtonVisibility();
         this.dispatchEvent(new CustomEvent('address-selected', { detail: address, bubbles: true }));
     }
 
@@ -93,7 +106,22 @@ export class AddressAutocomplete extends HTMLElement {
         }
     }
 
+    clearInput() {
+        if (!this.input.value) return;
+        this.input.value = '';
+        this.hideSuggestions();
+        this.updateClearButtonVisibility();
+        this.dispatchEvent(new CustomEvent('address-cleared', { bubbles: true }));
+    }
+
+    updateClearButtonVisibility() {
+        this.clearBtn.hidden = !this.input.value;
+    }
+
     get value() { return this.input.value; }
-    set value(val) { this.input.value = val; }
+    set value(val) {
+        this.input.value = val;
+        this.updateClearButtonVisibility();
+    }
 }
 customElements.define('address-autocomplete', AddressAutocomplete);

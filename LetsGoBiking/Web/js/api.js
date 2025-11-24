@@ -9,6 +9,17 @@ export async function geocodeAddress(address) {
     return { lat: coordinates[1], lon: coordinates[0], label };
 }
 
+export async function reverseGeocode(lat, lon) {
+    const url = `https://api-adresse.data.gouv.fr/reverse/?lat=${lat}&lon=${lon}&limit=1`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Échec du géocodage inverse');
+    const data = await res.json();
+    if (!data.features || !data.features.length) throw new Error('Adresse introuvable pour cette position');
+    const { coordinates } = data.features[0].geometry;
+    const { label } = data.features[0].properties;
+    return { lat: coordinates[1], lon: coordinates[0], label };
+}
+
 export async function getItinerary(start, end) {
     const isDemo = localStorage.getItem('itinerary_demo_mode') === 'true';
     const backendUrl = isDemo

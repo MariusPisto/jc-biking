@@ -7,7 +7,8 @@ export function initMap(mapEl) {
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
     
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    const zoomControl = L.control.zoom({ position: 'bottomright' }).addTo(map);
+    map.zoomControlContainer = zoomControl.getContainer();
     
     return map;
 }
