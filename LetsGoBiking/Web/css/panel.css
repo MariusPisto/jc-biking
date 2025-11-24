@@ -129,7 +129,7 @@ html {
   z-index: 20;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s;
   color: var(--text-dark);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .floating-swap-btn.rotated {
@@ -141,7 +141,7 @@ html {
 }
 
 .floating-swap-btn:active {
-  transform: translateY(-50%) scale(0.95);
+  transform: translateY(-50%) scale(0.95); 
 }
 
 .floating-swap-btn.rotated:active {
@@ -282,10 +282,52 @@ body.view-map .itinerary-panel {
   cursor: pointer;
 }
 
+.toggle-arrow {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  color: var(--text-dark);
+}
+
+.toggle-arrow::before,
+.toggle-arrow::after {
+    content: '';
+    position: absolute;
+    background-color: currentColor;
+    border-radius: 1px;
+}
+
+/* Barre horizontale */
+.toggle-arrow::before {
+    width: 16px;
+    height: 2.5px;
+    top: calc(50% - 1.25px);
+    left: calc(50% - 8px);
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Barre verticale */
+.toggle-arrow::after {
+    width: 2.5px;
+    height: 16px;
+    top: calc(50% - 8px);
+    left: calc(50% - 1.25px);
+    transform-origin: center;
+    transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+.notification-section:not(.closed) .toggle-arrow::after {
+    transform: scaleY(0) rotate(90deg);
+}
+
 .notification-content {
   display: block;
   max-height: 220px;
-  transition: max-height 0.28s ease-out, opacity 0.24s ease-out;
+  transition: max-height 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease-out;
   overflow: hidden;
   opacity: 1;
 }
@@ -392,29 +434,6 @@ body.view-map .itinerary-panel {
   background-color: #f2f2f2;
 }
 
-/* Second row container for Demo + Reset */
-.button-group .button-row {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.button-group .button-row button {
-  flex: 1 1 0;
-  width: auto;
-}
-
-/* Make sure primary occupies the full row */
-.button-group > button.primary {
-  width: 100%;
-  display: block;
-}
-
-@media (max-width: 480px) {
-  .button-group .button-row {
-    gap: 0.5rem;
-  }
-}
-
 #calculate-route-btn:active,
 #demo-btn:active,
 #reset-route-btn:active {
@@ -488,9 +507,9 @@ body.view-map .itinerary-panel {
 
 .route-card .ac-suggestions {
   border: none;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.15);
   margin-top: 0;
-  left: -60px;
+  left: -60px; 
   width: calc(100% + 80px);
 }
 
@@ -506,107 +525,4 @@ body.view-map .itinerary-panel {
 }
 .ac-suggestion::before {
   content: "📍";
-  font-size: 1.1rem;
-  opacity: 0.7;
-}
-.ac-suggestion:hover {
-  background-color: var(--bg-light);
-}
-.ac-loading {
-  padding: 0.9rem 1rem;
-  color: var(--text-light);
-  font-style: italic;
-}
-
-#results-container {
-  border-top: 1px solid var(--border-color);
-  padding-top: 1rem;
-  margin-top: 0.5rem;
-}
-
-#itinerary-status {
-  font-size: 1.1rem;
-  font-weight: 500;
-  min-height: 1.2rem;
-  cursor: pointer;
-  position: relative;
-  padding-right: 20px;
-}
-
-#itinerary-status::after {
-  content: "";
-  position: absolute;
-  right: 4px;
-  top: 50%;
-  margin-top: -6px;
-  width: 8px;
-  height: 8px;
-  border-left: 2px solid var(--text-light);
-  border-bottom: 2px solid var(--text-light);
-  transform: rotate(-45deg);
-  transition: transform 0.3s ease;
-}
-
-#results-container.collapsed #itinerary-status::after {
-  transform: rotate(45deg);
-  margin-top: -3px;
-}
-
-#steps {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  margin-top: 1rem;
-  overflow: hidden;
-  opacity: 1;
-  transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out,
-    margin-top 0.4s ease-in-out;
-}
-
-#results-container.collapsed #steps {
-  max-height: 0;
-  opacity: 0;
-  margin-top: 0;
-  pointer-events: none;
-}
-
-.step-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--border-color);
-}
-.step-item:last-child {
-  border-bottom: none;
-}
-.step-marker {
-  font-size: 1.75rem;
-  color: var(--primary-color);
-  line-height: 1.2;
-  flex-shrink: 0;
-  width: 30px;
-  text-align: center;
-}
-.step-content {
-  flex-grow: 1;
-}
-.step-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-.step-sub {
-  font-size: 0.95rem;
-  color: var(--text-light);
-  margin-top: 0.25rem;
-}
-.step-badge {
-  background: var(--bg-light);
-  border: 1px solid var(--border-color);
-  padding: 0.25rem 0.6rem;
-  border-radius: 1rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
+  font-size:

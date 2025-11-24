@@ -14,11 +14,11 @@
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="css/toaster.css" />
     <link rel="stylesheet" href="css/loading.css" />
+    <link rel="stylesheet" href="css/panel.css" />
   </head>
   <body>
-    <div id="loader" style="display: none">
+    <div id="loader" class="hidden">
       <div class="loader-content">
-        <!-- from https://codepen.io/jkantner/pen/XWPbNNE -->
         <svg class="bike" viewBox="0 0 48 30" width="48px" height="30px">
           <g
             fill="none"
@@ -103,52 +103,89 @@
           </g>
         </svg>
         <p>Calcul de l'itinéraire</p>
+        <div id="loading-phrases"></div>
       </div>
     </div>
     <div id="toaster-container"></div>
     <div id="map"></div>
     <div class="itinerary-panel" id="itinerary-panel">
-      <h2>Itinéraire</h2>
-      <div class="input-group">
-        <label for="start-autocomplete">Départ</label>
-        <address-autocomplete
-          id="start-autocomplete"
-          placeholder="Adresse de départ"
-        >
-        </address-autocomplete>
+      <div class="panel-header">
+        <h2>Itinéraire</h2>
       </div>
-      <div class="input-group">
-        <label for="end-autocomplete">Arrivée</label>
-        <address-autocomplete
-          id="end-autocomplete"
-          placeholder="Adresse d'arrivée"
-        >
-        </address-autocomplete>
-      </div>
-      <div class="notification-section closed">
-        <h4>
-          Notifications en temps réel
-          <button class="toggle-arrow"></button>
-        </h4>
-        <div class="notification-content">
-          <div class="notification-items-container">
-            <label>
-              <input type="checkbox" id="sub-weather-btn" />
-              Alertes Météo
-            </label>
-            <label>
-              <input type="checkbox" id="sub-pollution-btn" />
-              Alertes Pollution
-            </label>
+      <div class="panel-content">
+        <div class="route-card">
+          <div class="search-row top">
+            <span class="search-label">Départ :</span>
+            <address-autocomplete
+              id="start-autocomplete"
+              placeholder="Adresse de départ"
+            >
+            </address-autocomplete>
+          </div>
+
+          <div class="divider-line"></div>
+
+          <div class="search-row bottom">
+            <span class="search-label">Arrivée :</span>
+            <address-autocomplete
+              id="end-autocomplete"
+              placeholder="Où allons-nous ?"
+            >
+            </address-autocomplete>
+          </div>
+
+          <button
+            id="swap-addresses-btn"
+            class="floating-swap-btn"
+            aria-label="Inverser les adresses"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M7 4v16M7 4l-4 4M7 20l4-4M17 20V4M17 20l4-4M17 4l-4 4" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="notification-section closed">
+          <h4>
+            Notifications en temps réel
+            <button class="toggle-arrow"></button>
+          </h4>
+          <div class="notification-content">
+            <div class="notification-items-container">
+              <label>
+                <span>Alertes Météo</span>
+                <input type="checkbox" id="sub-weather-btn" />
+              </label>
+              <label>
+                <span>Alertes Pollution</span>
+                <input type="checkbox" id="sub-pollution-btn" />
+              </label>
+            </div>
           </div>
         </div>
-      </div>
-      <button id="calculate-route-btn">Calculer l'itinéraire</button>
-      <button id="demo-btn" type="button">Demo</button>
-      <button id="reset-route-btn">Réinitialiser</button>
-      <div id="results-container">
-        <div id="itinerary-status"></div>
-        <ol id="steps"></ol>
+        <div class="button-group">
+          <button id="calculate-route-btn" class="primary">
+            Calculer l'itinéraire
+          </button>
+          <div class="button-row">
+            <button id="demo-btn" type="button" class="secondary">Demo</button>
+            <button id="reset-route-btn" class="tertiary">Réinitialiser</button>
+          </div>
+        </div>
+        <div id="results-container">
+          <div id="itinerary-status"></div>
+          <ol id="steps"></ol>
+        </div>
       </div>
     </div>
     <button
@@ -164,5 +201,6 @@
     <script type="module" src="js/app.js"></script>
     <script src="js/stomp.js"></script>
     <script src="js/notification.js"></script>
+    <script src="js/loading-phrases.js"></script>
   </body>
 </html>
