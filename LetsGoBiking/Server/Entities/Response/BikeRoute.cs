@@ -2,17 +2,28 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Server.Entities.Response
 {
+    [DataContract]
     public class BikeRoute : Route
     {
-        public override string type { get; } = "bike";
-        public string addressStart { get; set; }
-        public int availableBikes { get; set; }
-        public string addressEnd { get; set; }
-        public int availableDropPlace { get; set; }
+        [DataMember(Name = "type")]
+        public override string Type { get; set; } = "bike";
+        
+        [DataMember(Name = "addressStart")]
+        public string AddressStart { get; set; }
+        
+        [DataMember(Name = "availableBikes")]
+        public int AvailableBikes { get; set; }
+        
+        [DataMember(Name = "addressEnd")]
+        public string AddressEnd { get; set; }
+        
+        [DataMember(Name = "availableDropPlace")]
+        public int AvailableDropPlace { get; set; }
     }
 }

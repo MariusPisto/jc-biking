@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Server.API
@@ -25,8 +24,8 @@ namespace Server.API
         {
             List<List<double>> coordinatesList = new List<List<double>>
             {
-                new List<double> { start.longitude, start.latitude },
-                new List<double> { end.longitude, end.latitude }
+                new List<double> { start.Longitude, start.Latitude },
+                new List<double> { end.Longitude, end.Latitude }
             };
 
             DirectionBody body = new DirectionBody
@@ -35,7 +34,7 @@ namespace Server.API
                 Language = "fr"
             };
 
-            APIResponse response = await client.CallPostAsync($"{_openRouteServiceBaseUrl}/{profile}/geojson?api_key={_openRouteServiceApiKey}", System.Text.Json.JsonSerializer.Serialize<DirectionBody>(body));
+            APIResponse response = await client.CallPostAsync($"{_openRouteServiceBaseUrl}/{profile}/geojson?api_key={_openRouteServiceApiKey}", JsonConvert.SerializeObject(body));
             if (response.Status != 200)
             {
                 return null;

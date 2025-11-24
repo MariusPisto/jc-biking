@@ -1,24 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Server.Entities.ORS
 {
+    [DataContract]
     public class Engine
     {
-        [JsonPropertyName("version")]
+        [DataMember(Name = "version")]
         public string Version { get; set; }
 
-        [JsonPropertyName("build_date")]
+        [DataMember(Name = "build_date")]
         public string BuildDate { get; set; }
 
-        [JsonPropertyName("graph_date")]
+        [DataMember(Name = "graph_date")]
         public string GraphDate { get; set; }
 
-        [JsonPropertyName("osm_date")]
+        [DataMember(Name = "osm_date")]
         public string OsmDate { get; set; }
     }
 }
