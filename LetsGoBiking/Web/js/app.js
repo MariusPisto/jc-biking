@@ -1,7 +1,7 @@
 import './components/AddressAutocomplete.js';
 import { initMap } from './map.js';
 import { geocodeAddress, getItinerary, reverseGeocode } from './api.js';
-import { setStatus, appendRouteSteps, addCustomStep, togglePanel, toggleSteps, setView } from './ui.js';
+import { setStatus, appendRouteSteps, createRouteSegment, togglePanel, toggleSteps, setView } from './ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     let currentMap = null;
@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let userLocationMarker = null;
     let userLocationAccuracyCircle = null;
     let locateButtonEl = null;
+    let mapSelectionMode = null;
     const DEMO_MODE_KEY = 'itinerary_demo_mode';
 
     const elements = {
@@ -18,6 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
         swapAddressesBtn: document.getElementById('swap-addresses-btn'),
         geoStartBtn: document.getElementById('geo-start-btn'),
         geoEndBtn: document.getElementById('geo-end-btn'),
+        mapSelectStartBtn: document.getElementById('map-select-start-btn'),
+        mapSelectEndBtn: document.getElementById('map-select-end-btn'),
         calculateBtn: document.getElementById('calculate-route-btn'),
         demoBtn: document.getElementById('demo-btn'),
         resetBtn: document.getElementById('reset-route-btn'),
@@ -52,29 +55,44 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.viewSwitchBtn.addEventListener('click', toggleView);
         elements.swapAddressesBtn.addEventListener('click', swapAddresses);
         elements.resetBtn.addEventListener('click', resetRoute);
+
+        ['input', 'address-selected', 'address-cleared'].forEach(evt => {
+            elements.startAC.addEventListener(evt, clearRouteResults);
+            elements.endAC.addEventListener(evt, clearRouteResults);
+        });
+
         bindGeolocationButton(elements.geoStartBtn, 'start');
         bindGeolocationButton(elements.geoEndBtn, 'end');
+        bindMapSelectButton(elements.mapSelectStartBtn, 'start');
+        bindMapSelectButton(elements.mapSelectEndBtn, 'end');
 
-        const initialStart = localStorage.getItem('itinerary_start');
-        const initialEnd = localStorage.getItem('itinerary_end');
+        currentMap.on('click', async (e) => {
+            if (!mapSelectionMode) return;
 
-        if (initialStart) {
-            elements.startAC.value = initialStart;
-        }
-        if (initialEnd) {
-            elements.endAC.value = initialEnd;
-        }
+            const { lat, lng } = e.latlng;
+            try {
+                const { label } = await reverseGeocode(lat, lng);
 
-        if (initialStart && initialEnd) {
-            buildRoute(initialStart, initialEnd);
-            if (window.innerWidth < 768) {
-                setView('map', currentMap, elements.viewSwitchBtn);
+                if (mapSelectionMode === 'start') {
+                    elements.startAC.value = label;
+                    highlightAddressField(elements.startAC);
+                } else if (mapSelectionMode === 'end') {
+                    elements.endAC.value = label;
+                    highlightAddressField(elements.endAC);
+                }
+
+                setMapSelectionMode(null);
+                clearRouteResults();
+            } catch (error) {
+                console.error('Reverse geocoding error:', error);
+                setStatus(elements.statusEl, 'Impossible de récupérer l\'adresse à cet endroit.', 'error');
+                setMapSelectionMode(null);
             }
-        } else {
-            elements.resultsContainer.classList.add('collapsed');
-            if (window.innerWidth < 768) {
-                setView('panel', currentMap, elements.viewSwitchBtn);
-            }
+        });
+
+        elements.resultsContainer.classList.add('collapsed');
+        if (window.innerWidth < 768) {
+            setView('panel', currentMap, elements.viewSwitchBtn);
         }
     }
 
@@ -93,11 +111,38 @@ document.addEventListener('DOMContentLoaded', () => {
         const startValue = elements.startAC.value;
         elements.startAC.value = elements.endAC.value;
         elements.endAC.value = startValue;
+        clearRouteResults();
     }
 
     function bindGeolocationButton(button, targetType) {
         if (!button) return;
         button.addEventListener('click', () => requestUserLocation(targetType));
+    }
+
+    function bindMapSelectButton(button, targetType) {
+        if (!button) return;
+        button.addEventListener('click', () => {
+            if (mapSelectionMode === targetType) {
+                setMapSelectionMode(null);
+            } else {
+                setMapSelectionMode(targetType);
+            }
+        });
+    }
+
+    function setMapSelectionMode(mode) {
+        mapSelectionMode = mode;
+
+        if (elements.mapSelectStartBtn) {
+            elements.mapSelectStartBtn.classList.toggle('active', mode === 'start');
+        }
+        if (elements.mapSelectEndBtn) {
+            elements.mapSelectEndBtn.classList.toggle('active', mode === 'end');
+        }
+
+        if (elements.mapEl) {
+            elements.mapEl.style.cursor = mode ? 'crosshair' : '';
+        }
     }
 
     function setupLocateControl() {
@@ -141,6 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const { label } = await reverseGeocode(coords.latitude, coords.longitude);
                 targetField.value = label;
                 highlightAddressField(targetField);
+                clearRouteResults();
             } catch (error) {
                 console.error('Reverse geocoding error:', error);
                 setStatus(elements.statusEl, 'Impossible de récupérer votre adresse.', 'error');
@@ -249,8 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        localStorage.setItem('itinerary_start', startText);
-        localStorage.setItem('itinerary_end', endText);
+
 
         await buildRoute(startText, endText);
 
@@ -365,6 +410,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isFirst = index === 0;
                 const isLast = index === allRoutes.length - 1;
 
+                let segmentStepsContainer = elements.stepsEl;
+
                 if (isWalking) {
                     let destinationText = 'la destination';
                     if (bikeRouteInfo) {
@@ -378,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ? `${durationStr} | <b>${bikeRouteInfo.availableBikes || 'N/A'} vélos dispo</b>`
                         : `${durationStr}`;
 
-                    addCustomStep(
+                    segmentStepsContainer = createRouteSegment(
                         elements.stepsEl,
                         `Marchez vers ${destinationText}`,
                         subtext,
@@ -386,7 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     );
                 } else if (isBike) {
                     const subtext = `${durationStr} | <b>${route.availableDropPlace || 'N/A'} places dispo</b>`;
-                    addCustomStep(
+                    segmentStepsContainer = createRouteSegment(
                         elements.stepsEl,
                         `Roulez vers ${route.addressEnd || 'la station de rendu'}`,
                         subtext,
@@ -394,7 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     );
                 }
 
-                appendRouteSteps(elements.stepsEl, route.feature.properties.segments);
+                appendRouteSteps(segmentStepsContainer, route.feature.properties.segments);
             });
 
             const totalKm = (totalDistance / 1000).toFixed(1);
@@ -409,19 +456,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function resetRoute() {
-        elements.startAC.value = '';
-        elements.endAC.value = '';
-
+    function clearRouteResults() {
         routeLayerGroup.clearLayers();
-
         setStatus(elements.statusEl, '');
         elements.stepsEl.innerHTML = '';
         elements.resultsContainer.classList.add('collapsed');
-
-        localStorage.removeItem('itinerary_start');
-        localStorage.removeItem('itinerary_end');
         localStorage.removeItem(DEMO_MODE_KEY);
+    }
+
+    function resetRoute() {
+        elements.startAC.value = '';
+        elements.endAC.value = '';
+        clearRouteResults();
 
         if (window.innerWidth < 768) {
             setView('panel', currentMap, elements.viewSwitchBtn);

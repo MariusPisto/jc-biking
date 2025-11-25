@@ -193,6 +193,13 @@ html {
   cursor: progress;
 }
 
+.geo-btn.active,
+.geo-btn.active:hover {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
 .divider-line {
   height: 1px;
   background-color: #e5e5e5;
@@ -704,9 +711,8 @@ body.view-map .itinerary-panel {
     margin-top 0.4s ease-in-out;
 }
 
-/* When .collapsed is present the list is visible (inverted semantics) */
 #results-container.collapsed #steps {
-  max-height: 1000px; /* large enough to show content smoothly */
+  max-height: 200000px; /* ensure all content is shown, there is a scrollbar anyway but we need to keep it otherwise it doesn't show any step */
   opacity: 1;
   margin-top: 1rem;
   pointer-events: auto;
@@ -751,4 +757,75 @@ body.view-map .itinerary-panel {
   font-weight: 500;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+.segment-item {
+  border-bottom: 1px solid var(--border-color);
+  list-style: none;
+}
+
+.segment-item:last-child {
+  border-bottom: none;
+}
+
+.segment-header {
+  cursor: pointer;
+  background: var(--bg-light);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  transition: background-color 0.2s;
+  padding-right: 1rem; /* Space for toggle icon */
+  border-bottom: none;
+}
+
+.segment-header:hover {
+  background: #eef0f5;
+}
+
+.segment-header .toggle-icon {
+  margin-left: auto;
+  color: var(--text-light);
+  font-size: 0.8rem;
+  transition: transform 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.segment-item.expanded .segment-header .toggle-icon {
+  transform: rotate(180deg);
+}
+
+.segment-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out;
+  padding-left: 1rem;
+}
+
+.segment-item.expanded .segment-steps {
+  max-height: 5000px;
+  opacity: 1;
+  padding-bottom: 1rem;
+}
+
+.segment-steps .step-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  font-size: 0.95rem;
+}
+
+.segment-steps .step-item:last-child {
+  border-bottom: none;
+}
+
+.segment-steps .step-marker {
+  font-size: 1.2rem;
+  width: 24px;
 }
