@@ -143,6 +143,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (elements.mapEl) {
             elements.mapEl.style.cursor = mode ? 'crosshair' : '';
         }
+
+        if (mode && window.innerWidth < 768) {
+            setView('map', currentMap, elements.viewSwitchBtn);
+        }
     }
 
     function setupLocateControl() {
