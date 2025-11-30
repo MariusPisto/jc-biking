@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setLocateButtonState(true);
         navigator.geolocation.getCurrentPosition(({ coords }) => {
-            updateUserLocation(coords, { boostZoom: true });
+            updateUserLocation(coords);
             setLocateButtonState(false);
         }, (error) => {
             const message = error.code === error.PERMISSION_DENIED
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function updateUserLocation(coords, { boostZoom = false } = {}) {
+    function updateUserLocation(coords) {
         if (!currentMap || !userLocationLayer) return;
         const latlng = [coords.latitude, coords.longitude];
         const accuracy = Math.max(coords.accuracy || 25, 20);
@@ -220,9 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
             userLocationAccuracyCircle.setRadius(accuracy);
         }
 
-        const mapMaxZoom = currentMap.options.maxZoom || 19;
-        const requestedZoom = boostZoom ? currentMap.getZoom() + 2 : currentMap.getZoom();
-        const targetZoom = Math.min(mapMaxZoom, Math.max(requestedZoom, 15));
+        const targetZoom = Math.max(currentMap.getZoom(), 15);
         currentMap.flyTo(latlng, targetZoom, { duration: 0.8 });
     }
 
