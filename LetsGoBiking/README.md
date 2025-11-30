@@ -139,8 +139,7 @@ The project follows a **multi-tier architecture** with several components:
 
 The project uses a `.env` file (not included in repository) that should be placed in the root directory. The `compile.bat` script automatically copies it to `Server/bin/Release/`.
 
-Required environment variables:
-- API keys for external services (JCDecaux, OpenRouteService, Geoapify)
+An example of the .env file is in Server/.env.example
 
 ### Port Configuration
 

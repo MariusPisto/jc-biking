@@ -73,7 +73,10 @@ set "SOURCE_ENV=.env"
 set "TARGET_ROOT=Server\bin\Release"
 
 if not exist "%SOURCE_ENV%" (
-    echo [WARNING] .env file not found in current directory!
+    echo [ERROR] .env file not found in current directory!
+    echo [ERROR] Compilation stopped. Please add the .env file to the root directory.
+    pause
+    exit /b 1
 ) else (
     copy /y "%SOURCE_ENV%" "%TARGET_ROOT%\" >nul
     for /d %%s in ("%TARGET_ROOT%\*") do (
