@@ -28,7 +28,7 @@ An example of the .env file is in Server/.env.example
 
 ### Port Configuration
 
-- **Proxy Service:** Port 8733 (configurable in Proxy code)
+- **Proxy Service:** Port 8733
 - **Web Client:** Port 8000 (Python HTTP server)
 - **Server Service:** Configured in `Server/App.config`
 
