@@ -127,7 +127,7 @@ The project splits in several components:
   * **HeavyClient (Java Swing):**
     - Desktop application built with Java Swing
     - Uses JXMapViewer for map visualization
-    - Provides the same functionality as the Web client
+    - Provides basic functionalities, not all the web functionnalities are present
     - Built with Maven
     - Located in the `HeavyClient/` directory
 
