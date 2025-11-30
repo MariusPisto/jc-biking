@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.ServiceModel;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -22,27 +23,48 @@ namespace Server.API
 
         public async Task<RouteFeature> getRoute(Location start, Location end, string profile)
         {
-            List<List<double>> coordinatesList = new List<List<double>>
+            try
             {
-                new List<double> { start.Longitude, start.Latitude },
-                new List<double> { end.Longitude, end.Latitude }
-            };
+                List<List<double>> coordinatesList = new List<List<double>>
+                {
+                    new List<double> { start.Longitude, start.Latitude },
+                    new List<double> { end.Longitude, end.Latitude }
+                };
 
-            DirectionBody body = new DirectionBody
-            {
-                Coordinates = coordinatesList,
-                Language = "fr"
-            };
+                DirectionBody body = new DirectionBody
+                {
+                    Coordinates = coordinatesList,
+                    Language = "fr"
+                };
 
-            APIResponse response = await client.CallPostAsync($"{_openRouteServiceBaseUrl}/{profile}/geojson?api_key={_openRouteServiceApiKey}", JsonConvert.SerializeObject(body));
-            if (response.Status != 200)
+                Console.WriteLine($"[OpenRouteServiceAPI] Getting route ({profile}) from ({start.Latitude}, {start.Longitude}) to ({end.Latitude}, {end.Longitude})");
+                APIResponse response = await client.CallPostAsync($"{_openRouteServiceBaseUrl}/{profile}/geojson?api_key={_openRouteServiceApiKey}", JsonConvert.SerializeObject(body)).ConfigureAwait(false);
+                
+                if (response == null || response.Status != 200)
+                {
+                    Console.WriteLine($"[OpenRouteServiceAPI] Failed to get route. Status: {response?.Status ?? -1}");
+                    return null;
+                }
+
+                FeatureCollection route = JsonConvert.DeserializeObject<FeatureCollection>(response.Response);
+                Console.WriteLine($"[OpenRouteServiceAPI] Successfully retrieved route");
+                return route?.Features?[0];
+            }
+            catch (TimeoutException ex)
             {
+                Console.WriteLine($"[OpenRouteServiceAPI] Timeout getting route: {ex.Message}");
                 return null;
             }
-
-            FeatureCollection route = JsonConvert.DeserializeObject<FeatureCollection>(response.Response);
-
-            return route.Features[0];
+            catch (CommunicationException ex)
+            {
+                Console.WriteLine($"[OpenRouteServiceAPI] Communication error getting route: {ex.Message}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[OpenRouteServiceAPI] Error getting route: {ex.GetType().Name} - {ex.Message}");
+                return null;
+            }
         }
     }
 }

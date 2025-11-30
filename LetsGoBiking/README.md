@@ -1,6 +1,6 @@
 # LetsGoBiking - Middleware
 
-**LetsGoBiking** is an application designed to find best route between two points by using only public bikes
+**LetsGoBiking** is an application designed to find best route between two points by using only public bikes, walking and electric scooters
 
 -----
 
@@ -17,6 +17,20 @@ This project contains some automated build to avoid pre-built problems.
 | **`run_servers_dbg.bat`** | Starts all services in Debug mode (same as above but with Debug builds). Useful for development and debugging. Automatically stops all services when you press Enter. /!\ Does not work without manual compilation /!\ |
 
 -----
+
+## Configuration
+
+### Environment Variables
+
+The project uses a `.env` file (not included in repository) that should be placed in the root directory. The `compile.bat` script automatically copies it to `Server/bin/Release/`.
+
+An example of the .env file is in Server/.env.example
+
+### Port Configuration
+
+- **Proxy Service:** Port 8733 (configurable in Proxy code)
+- **Web Client:** Port 8000 (Python HTTP server)
+- **Server Service:** Configured in `Server/App.config`
 
 ## How to Build & Run
 
@@ -100,13 +114,11 @@ The project splits in several components:
     - Connects to external APIs (JCDecaux for bike stations, OpenRouteService for routing)
     - Manages in-memory caching to reduce API calls
     - Exposes WCF services for itinerary calculation and address search
-    - Runs on a configurable port (default: configured in App.config)
 
   * **Proxy (.NET 9):** 
     - Acts as a gateway between clients and the Server
     - Implements HTTP caching to reduce load on external APIs
     - Handles request forwarding and response transformation
-    - Runs on port **8733** (default)
     - Provides RESTful API endpoints
 
   * **FakeNotification (.NET 8):** 
@@ -132,20 +144,6 @@ The project splits in several components:
     - Located in the `HeavyClient/` directory
 
 -----
-
-## Configuration
-
-### Environment Variables
-
-The project uses a `.env` file (not included in repository) that should be placed in the root directory. The `compile.bat` script automatically copies it to `Server/bin/Release/`.
-
-An example of the .env file is in Server/.env.example
-
-### Port Configuration
-
-- **Proxy Service:** Port 8733 (configurable in Proxy code)
-- **Web Client:** Port 8000 (Python HTTP server)
-- **Server Service:** Configured in `Server/App.config`
 
 ## Troubleshooting
 
