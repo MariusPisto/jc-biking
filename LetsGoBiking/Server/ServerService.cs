@@ -26,7 +26,7 @@ namespace Server
             response.StatusCode = HttpStatusCode.OK;
         }
 
-        public async Task<ItineraryResponse> ItineraryAsync(double OriginLat, double OriginLng, double DestLat, double DestLng)
+        public async Task<ItineraryResponse> ItineraryAsync(double OriginLat, double OriginLng, double DestLat, double DestLng, bool useDott = false)
         {
             try
             {   
@@ -35,12 +35,21 @@ namespace Server
                     WebOperationContext.Current.OutgoingResponse.Headers.Add("Access-Control-Allow-Origin", "*");
                 }
 
-                Console.WriteLine($"Searching itinerary from ({OriginLat}, {OriginLng}) to ({DestLat}, {DestLng})");
+                Console.WriteLine($"Searching itinerary from ({OriginLat}, {OriginLng}) to ({DestLat}, {DestLng}) with Dott: {useDott}");
 
                 JCDecauxAPI Api = new JCDecauxAPI();
                 OpenRouteServiceAPI ORSApi = new OpenRouteServiceAPI();
 
                 List<Station> Stations = await Api.GetAllStations();
+
+                if (useDott)
+                {
+                    Console.WriteLine("Fetching Dott stations...");
+                    DottAPI DottApi = new DottAPI();
+                    List<Station> DottStations = await DottApi.GetAllStations();
+                    Console.WriteLine($"Found {DottStations.Count} Dott stations.");
+                    Stations.AddRange(DottStations);
+                }
 
                 GeoCoordinate OriginCoord = new GeoCoordinate(OriginLat, OriginLng);
                 GeoCoordinate DestCoord = new GeoCoordinate(DestLat, DestLng);
@@ -174,7 +183,8 @@ namespace Server
                             AddressStart = ClosestOriginStation.address,
                             AvailableBikes = ClosestOriginStation.totalStands.availabilities.bikes,
                             AddressEnd = ClosestDestinationStation.address,
-                            AvailableDropPlace = ClosestDestinationStation.totalStands.availabilities.stands
+                            AvailableDropPlace = ClosestDestinationStation.totalStands.availabilities.stands,
+                            VehicleType = ClosestOriginStation.contractName.Contains("_dott") ? "scooter" : "bike"
                         }
                     );
 

@@ -15,9 +15,9 @@ namespace Server
         void GetOptions();
 
         [OperationContract]
-        [WebGet(UriTemplate = "itinerary?originLat={OriginLat}&originLng={OriginLng}&destLat={DestLat}&destLng={DestLng}",
+        [WebGet(UriTemplate = "itinerary?originLat={OriginLat}&originLng={OriginLng}&destLat={DestLat}&destLng={DestLng}&useDott={useDott}",
             ResponseFormat = WebMessageFormat.Json)]
-        Task<ItineraryResponse> ItineraryAsync(double OriginLat, double OriginLng, double DestLat, double DestLng);
+        Task<ItineraryResponse> ItineraryAsync(double OriginLat, double OriginLng, double DestLat, double DestLng, bool useDott = false);
 
         [OperationContract]
         [WebGet(UriTemplate = "addresses?text={text}", ResponseFormat = WebMessageFormat.Json)]
