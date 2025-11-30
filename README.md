@@ -6,6 +6,8 @@
 
 ## Configuration
 
+> After getting the code GitHub, consider root directory as ./LetsGoBiking
+
 ### Environment Variables
 
 The project uses a `.env` file (not included in repository) that should be placed in the root directory. The `compile.bat` script automatically copies it to `Server/bin/Release/`.
