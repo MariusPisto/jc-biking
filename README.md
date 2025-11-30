@@ -6,7 +6,7 @@
 
 ## Configuration
 
-> After getting the code GitHub, consider root directory as ./LetsGoBiking
+> After cloning the GitHub Repository, consider root directory as ./LetsGoBiking
 
 ### Environment Variables
 
@@ -16,15 +16,15 @@ An example of the .env file is in Server/.env.example
 
 ### Port Configuration
 
-- **Proxy Service:** Port 8733
+- **Proxy Service:** Port 8090
 - **Web Client:** Port 8000 (Python HTTP server)
-- **Server Service:** Configured in `Server/App.config`
+- **Server Service:** Port 8733
 
 ## How to Build & Run
 
 ### Prerequisites
 
-  * **Visual Studio 2022** (with C# development workload)
+  * **Visual Studio 2022** (with C# development workload with WCF)
   * **.NET 9.0 SDK**
   * **Java JDK** (for HeavyClient - Java Swing application)
   * **Maven** (for building HeavyClient)
@@ -50,8 +50,8 @@ An example of the .env file is in Server/.env.example
     Run **`run_servers_rls.bat`** (or `run_servers_dbg.bat` for debug mode).
 
     > *The script will automatically:*
-    > *- Start Proxy service (port 8733)*
-    > *- Start Server service (WCF)*
+    > *- Start Proxy service (port 8090)*
+    > *- Start Server service (WCF, port 8733)*
     > *- Start FakeNotification service*
     > *- Start HeavyClient (Java Swing application)*
     > *- Start Python HTTP server for Web client (port 8000)*
