@@ -117,7 +117,7 @@ The project splits in several components:
 ### Client Applications
 
   * **Web Client (HTML/JavaScript):**
-    - Modern web-based interface
+    - Web-based interface
     - Interactive map using Leaflet.js
     - Address autocomplete functionality
     - Real-time route visualization
