@@ -162,16 +162,16 @@ html {
   .itinerary-panel {
     top: 1.5rem;
     left: 0;
-    width: 380px;
+    width: 500px;
     height: auto;
     max-height: calc(100vh - 3rem);
     transform: translateX(1.5rem);
-    border-radius: var(--border-radius);
+    border-radius: var(--border-radius) 0px var(--border-radius) var(--border-radius);
     box-shadow: var(--shadow);
   }
 
   .itinerary-panel.collapsed {
-    transform: translateX(calc(-380px - 2rem));
+    transform: translateX(calc(-500px - 2rem));
   }
 }
 
@@ -186,7 +186,7 @@ html {
     z-index: 1001;
     top: 1.5rem;
     left: 0;
-    transform: translateX(calc(1.5rem + 380px));
+    transform: translateX(calc(1.5rem + 500px));
     background: #fff;
     border: 1px solid var(--border-color);
     border-left: none;

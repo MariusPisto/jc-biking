@@ -1,7 +1,7 @@
 import './components/AddressAutocomplete.js';
 import { initMap } from './map.js';
-import { geocodeAddress, getItinerary, reverseGeocode } from './api.js';
-import { setStatus, appendRouteSteps, addCustomStep, togglePanel, toggleSteps, setView } from './ui.js';
+import { geocodeAddress, getItinerary } from './api.js';
+import { setStatus, appendRouteSteps, createRouteSegment, togglePanel, toggleSteps, setView } from './ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     let currentMap = null;
@@ -10,6 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let userLocationMarker = null;
     let userLocationAccuracyCircle = null;
     let locateButtonEl = null;
+    let mapSelectionMode = null;
+    let pinLayer = null;
+    let startPinMarker = null;
+    let endPinMarker = null;
+    let addressUpdateTimeouts = { start: null, end: null };
     const DEMO_MODE_KEY = 'itinerary_demo_mode';
 
     const elements = {
@@ -18,6 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
         swapAddressesBtn: document.getElementById('swap-addresses-btn'),
         geoStartBtn: document.getElementById('geo-start-btn'),
         geoEndBtn: document.getElementById('geo-end-btn'),
+        mapSelectStartBtn: document.getElementById('map-select-start-btn'),
+        mapSelectEndBtn: document.getElementById('map-select-end-btn'),
         calculateBtn: document.getElementById('calculate-route-btn'),
         demoBtn: document.getElementById('demo-btn'),
         resetBtn: document.getElementById('reset-route-btn'),
@@ -35,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentMap = initMap(elements.mapEl);
         routeLayerGroup = L.layerGroup().addTo(currentMap);
         userLocationLayer = L.layerGroup().addTo(currentMap);
+        pinLayer = L.layerGroup().addTo(currentMap);
         setupLocateControl();
 
         elements.panelToggleBtn.addEventListener('click', () => togglePanel(elements.panel, elements.panelToggleBtn, currentMap));
@@ -52,29 +60,73 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.viewSwitchBtn.addEventListener('click', toggleView);
         elements.swapAddressesBtn.addEventListener('click', swapAddresses);
         elements.resetBtn.addEventListener('click', resetRoute);
+
+        ['input', 'address-selected', 'address-cleared'].forEach(evt => {
+            elements.startAC.addEventListener(evt, (e) => {
+                clearRouteResults();
+                if (evt === 'address-selected') {
+                    // Immediate update when address is selected from suggestions
+                    handleAddressUpdate('start', elements.startAC.value);
+                } else if (evt === 'input') {
+                    // Debounced update when typing
+                    if (addressUpdateTimeouts.start) {
+                        clearTimeout(addressUpdateTimeouts.start);
+                    }
+                    addressUpdateTimeouts.start = setTimeout(() => {
+                        handleAddressUpdate('start', elements.startAC.value);
+                    }, 1000);
+                } else if (evt === 'address-cleared') {
+                    removePinMarker('start');
+                }
+            });
+            elements.endAC.addEventListener(evt, (e) => {
+                clearRouteResults();
+                if (evt === 'address-selected') {
+                    // Immediate update when address is selected from suggestions
+                    handleAddressUpdate('end', elements.endAC.value);
+                } else if (evt === 'input') {
+                    // Debounced update when typing
+                    if (addressUpdateTimeouts.end) {
+                        clearTimeout(addressUpdateTimeouts.end);
+                    }
+                    addressUpdateTimeouts.end = setTimeout(() => {
+                        handleAddressUpdate('end', elements.endAC.value);
+                    }, 1000);
+                } else if (evt === 'address-cleared') {
+                    removePinMarker('end');
+                }
+            });
+        });
+
         bindGeolocationButton(elements.geoStartBtn, 'start');
         bindGeolocationButton(elements.geoEndBtn, 'end');
+        bindMapSelectButton(elements.mapSelectStartBtn, 'start');
+        bindMapSelectButton(elements.mapSelectEndBtn, 'end');
 
-        const initialStart = localStorage.getItem('itinerary_start');
-        const initialEnd = localStorage.getItem('itinerary_end');
+        currentMap.on('click', (e) => {
+            if (!mapSelectionMode) return;
 
-        if (initialStart) {
-            elements.startAC.value = initialStart;
-        }
-        if (initialEnd) {
-            elements.endAC.value = initialEnd;
-        }
+            const { lat, lng } = e.latlng;
+            // Format coordinates with 6 decimal places for precision
+            const coordString = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 
-        if (initialStart && initialEnd) {
-            buildRoute(initialStart, initialEnd);
-            if (window.innerWidth < 768) {
-                setView('map', currentMap, elements.viewSwitchBtn);
+            if (mapSelectionMode === 'start') {
+                elements.startAC.value = coordString;
+                highlightAddressField(elements.startAC);
+                updatePinMarker('start', lat, lng);
+            } else if (mapSelectionMode === 'end') {
+                elements.endAC.value = coordString;
+                highlightAddressField(elements.endAC);
+                updatePinMarker('end', lat, lng);
             }
-        } else {
-            elements.resultsContainer.classList.add('collapsed');
-            if (window.innerWidth < 768) {
-                setView('panel', currentMap, elements.viewSwitchBtn);
-            }
+
+            setMapSelectionMode(null);
+            clearRouteResults();
+        });
+
+        elements.resultsContainer.classList.add('collapsed');
+        if (window.innerWidth < 768) {
+            setView('panel', currentMap, elements.viewSwitchBtn);
         }
     }
 
@@ -93,11 +145,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const startValue = elements.startAC.value;
         elements.startAC.value = elements.endAC.value;
         elements.endAC.value = startValue;
+        clearRouteResults();
     }
 
     function bindGeolocationButton(button, targetType) {
         if (!button) return;
         button.addEventListener('click', () => requestUserLocation(targetType));
+    }
+
+    function bindMapSelectButton(button, targetType) {
+        if (!button) return;
+        button.addEventListener('click', () => {
+            if (mapSelectionMode === targetType) {
+                setMapSelectionMode(null);
+            } else {
+                setMapSelectionMode(targetType);
+            }
+        });
+    }
+
+    function setMapSelectionMode(mode) {
+        mapSelectionMode = mode;
+
+        if (elements.mapSelectStartBtn) {
+            elements.mapSelectStartBtn.classList.toggle('active', mode === 'start');
+        }
+        if (elements.mapSelectEndBtn) {
+            elements.mapSelectEndBtn.classList.toggle('active', mode === 'end');
+        }
+
+        if (elements.mapEl) {
+            elements.mapEl.style.cursor = mode ? 'crosshair' : '';
+        }
+
+        if (mode && window.innerWidth < 768) {
+            setView('map', currentMap, elements.viewSwitchBtn);
+        }
     }
 
     function setupLocateControl() {
@@ -136,17 +219,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setGeoButtonState(button, true);
 
-        navigator.geolocation.getCurrentPosition(async ({ coords }) => {
-            try {
-                const { label } = await reverseGeocode(coords.latitude, coords.longitude);
-                targetField.value = label;
-                highlightAddressField(targetField);
-            } catch (error) {
-                console.error('Reverse geocoding error:', error);
-                setStatus(elements.statusEl, 'Impossible de récupérer votre adresse.', 'error');
-            } finally {
-                setGeoButtonState(button, false);
-            }
+        navigator.geolocation.getCurrentPosition(({ coords }) => {
+            // Format coordinates with 6 decimal places for precision
+            const coordString = `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
+            targetField.value = coordString;
+            highlightAddressField(targetField);
+            updatePinMarker(targetType, coords.latitude, coords.longitude);
+            clearRouteResults();
+            setGeoButtonState(button, false);
         }, (error) => {
             console.error('Geolocation error:', error);
             const message = error.code === error.PERMISSION_DENIED
@@ -247,8 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        localStorage.setItem('itinerary_start', startText);
-        localStorage.setItem('itinerary_end', endText);
+
 
         await buildRoute(startText, endText);
 
@@ -268,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.stepsEl.innerHTML = '';
             elements.resultsContainer.classList.remove('collapsed');
             routeLayerGroup.clearLayers();
+            clearPins();
 
             const [startGeocoded, endGeocoded] = await Promise.all([
                 geocodeAddress(startText),
@@ -363,6 +443,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isFirst = index === 0;
                 const isLast = index === allRoutes.length - 1;
 
+                let segmentStepsContainer = elements.stepsEl;
+
                 if (isWalking) {
                     let destinationText = 'la destination';
                     if (bikeRouteInfo) {
@@ -376,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ? `${durationStr} | <b>${bikeRouteInfo.availableBikes || 'N/A'} vélos dispo</b>`
                         : `${durationStr}`;
 
-                    addCustomStep(
+                    segmentStepsContainer = createRouteSegment(
                         elements.stepsEl,
                         `Marchez vers ${destinationText}`,
                         subtext,
@@ -384,7 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     );
                 } else if (isBike) {
                     const subtext = `${durationStr} | <b>${route.availableDropPlace || 'N/A'} places dispo</b>`;
-                    addCustomStep(
+                    segmentStepsContainer = createRouteSegment(
                         elements.stepsEl,
                         `Roulez vers ${route.addressEnd || 'la station de rendu'}`,
                         subtext,
@@ -392,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     );
                 }
 
-                appendRouteSteps(elements.stepsEl, route.feature.properties.segments);
+                appendRouteSteps(segmentStepsContainer, route.feature.properties.segments);
             });
 
             const totalKm = (totalDistance / 1000).toFixed(1);
@@ -407,19 +489,140 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function resetRoute() {
-        elements.startAC.value = '';
-        elements.endAC.value = '';
+    function updatePinMarker(type, lat, lng) {
+        if (!pinLayer) return;
 
+        const isStart = type === 'start';
+        let marker = isStart ? startPinMarker : endPinMarker;
+
+        // Pin colors: green for start, red for end
+        const color = isStart ? '#28a745' : '#dc3545';
+        const label = isStart ? 'Départ' : 'Arrivée';
+
+        if (marker) {
+            marker.setLatLng([lat, lng]);
+        } else {
+            marker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'location-pin',
+                    html: `
+                        <div style="
+                            width: 24px;
+                            height: 24px;
+                            background-color: ${color};
+                            border: 3px solid white;
+                            border-radius: 50%;
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                            position: relative;
+                        ">
+                            <div style="
+                                position: absolute;
+                                bottom: -8px;
+                                left: 50%;
+                                transform: translateX(-50%);
+                                width: 0;
+                                height: 0;
+                                border-left: 6px solid transparent;
+                                border-right: 6px solid transparent;
+                                border-top: 8px solid ${color};
+                            "></div>
+                        </div>
+                    `,
+                    iconSize: [24, 32],
+                    iconAnchor: [12, 32],
+                    popupAnchor: [0, -32]
+                })
+            }).addTo(pinLayer);
+
+            marker.bindPopup(label);
+
+            if (isStart) {
+                startPinMarker = marker;
+            } else {
+                endPinMarker = marker;
+            }
+        }
+    }
+
+    async function handleAddressUpdate(type, value) {
+        if (!value || !value.trim()) {
+            removePinMarker(type);
+            return;
+        }
+
+        const trimmedValue = value.trim();
+        
+        // Check if input is coordinates
+        const coordPattern = /^\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*$/;
+        const match = trimmedValue.match(coordPattern);
+        
+        if (match) {
+            const lat = parseFloat(match[1]);
+            const lon = parseFloat(match[2]);
+            
+            // Validate coordinate ranges
+            if (!isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+                updatePinMarker(type, lat, lon);
+                return;
+            }
+        }
+
+        // Otherwise, try to geocode the address
+        try {
+            const geocoded = await geocodeAddress(trimmedValue);
+            if (geocoded && geocoded.lat && geocoded.lon) {
+                updatePinMarker(type, geocoded.lat, geocoded.lon);
+            }
+        } catch (error) {
+            // If geocoding fails, don't show a pin
+            console.log('Could not geocode address for pin:', error);
+        }
+    }
+
+    function removePinMarker(type) {
+        const isStart = type === 'start';
+        const marker = isStart ? startPinMarker : endPinMarker;
+        
+        if (marker && pinLayer) {
+            pinLayer.removeLayer(marker);
+        }
+        
+        if (isStart) {
+            startPinMarker = null;
+        } else {
+            endPinMarker = null;
+        }
+    }
+
+    function clearPins() {
+        if (pinLayer) {
+            pinLayer.clearLayers();
+        }
+        startPinMarker = null;
+        endPinMarker = null;
+    }
+
+    function clearRouteResults() {
         routeLayerGroup.clearLayers();
-
         setStatus(elements.statusEl, '');
         elements.stepsEl.innerHTML = '';
         elements.resultsContainer.classList.add('collapsed');
-
-        localStorage.removeItem('itinerary_start');
-        localStorage.removeItem('itinerary_end');
         localStorage.removeItem(DEMO_MODE_KEY);
+        
+        // Re-show pins based on current address field values
+        if (elements.startAC && elements.startAC.value) {
+            handleAddressUpdate('start', elements.startAC.value);
+        }
+        if (elements.endAC && elements.endAC.value) {
+            handleAddressUpdate('end', elements.endAC.value);
+        }
+    }
+
+    function resetRoute() {
+        elements.startAC.value = '';
+        elements.endAC.value = '';
+        clearPins();
+        clearRouteResults();
 
         if (window.innerWidth < 768) {
             setView('panel', currentMap, elements.viewSwitchBtn);

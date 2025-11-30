@@ -22,6 +22,21 @@
   opacity: 1;
   transition: all 0.5s cubic-bezier(0.17, 0.84, 0.44, 1);
   transform: translateX(0);
+  display: flex;
+  align-items: flex-start;
+}
+
+.toaster-icon-wrapper {
+    margin-right: 12px;
+    display: flex;
+    align-items: center;
+    height: 24px; /* Match icon height */
+    margin-top: 2px; /* Align with title */
+}
+
+.toaster-content {
+    flex: 1;
+    position: relative;
 }
 
 /* Styles de titre et message */
@@ -39,39 +54,47 @@
   line-height: 1.4;
 }
 
-/* Couleurs de bordure basées sur le Level du C# */
 .toaster-notification.warning {
-  border-left: 6px solid #f0ad4e; /* Orange */
+  border-left: 6px solid #f0ad4e;
+  background-color: #fffaf0;
 }
-.toaster-notification.high {
-  border-left: 6px solid #d9534f; /* Rouge */
+.toaster-notification.high, .toaster-notification.error {
+  border-left: 6px solid #d9534f;
+  background-color: #fff5f5;
 }
 .toaster-notification.info {
-  border-left: 6px solid #5bc0de; /* Bleu */
+  border-left: 6px solid #5bc0de;
 }
 
-/* La barre de timer de 6 secondes */
+.toaster-notification.warning .toaster-icon {
+    color: #f0ad4e;
+}
+.toaster-notification.high .toaster-icon, .toaster-notification.error .toaster-icon {
+    color: #d9534f;
+}
+.toaster-notification.info .toaster-icon {
+    color: #5bc0de;
+}
+
 .toaster-timer-bar {
   height: 4px;
   width: 100%;
   background-color: #ddd;
   margin-top: 12px;
   border-radius: 2px;
-  animation: shrink 6s linear forwards; /* Animation de 2 secondes */
+  animation: shrink 6s linear forwards;
 }
 
-/* Couleurs de la barre de timer */
 .toaster-notification.warning .toaster-timer-bar {
   background-color: #f0ad4e;
 }
-.toaster-notification.high .toaster-timer-bar {
+.toaster-notification.high .toaster-timer-bar, .toaster-notification.error .toaster-timer-bar {
   background-color: #d9534f;
 }
 .toaster-notification.info .toaster-timer-bar {
   background-color: #5bc0de;
 }
 
-/* Animation de la barre */
 @keyframes shrink {
   from {
     width: 100%;
@@ -81,17 +104,15 @@
   }
 }
 
-/* Animation de disparition (appliquée par JS) */
 .toaster-notification.dismiss {
   opacity: 0;
-  transform: translateX(110%); /* Glisse vers la droite par défaut */
+  transform: translateX(110%); 
 }
 
-/* Styles pour le bouton de fermeture */
 .close-btn {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: -4px;
+  right: 0;
   background: none;
   border: none;
   font-size: 20px;
@@ -99,7 +120,7 @@
   color: #888;
 }
 
-/* Pour les écrans mobiles */
+
 @media (max-width: 768px) {
   #toaster-container {
     width: 100%;
@@ -115,6 +136,6 @@
   }
 
   .toaster-notification.dismiss {
-    transform: translateY(-110%); /* Glisse vers le haut */
+    transform: translateY(-110%); 
   }
 }
