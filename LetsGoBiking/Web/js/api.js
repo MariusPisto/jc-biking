@@ -17,20 +17,26 @@ export async function searchAddresses(query) {
 }
 
 export async function geocodeAddress(address) {
+    // Check if input is in coordinate format (e.g., "43.6152, 7.0702" or "43.6152,7.0702")
+    const coordPattern = /^\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*$/;
+    const match = address.trim().match(coordPattern);
+    
+    if (match) {
+        const lat = parseFloat(match[1]);
+        const lon = parseFloat(match[2]);
+        
+        // Validate coordinate ranges
+        if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+            throw new Error(`Coordonnées invalides: ${address}`);
+        }
+        
+        return { lat, lon, label: address.trim() };
+    }
+    
+    // Otherwise, treat as address and search
     const results = await searchAddresses(address);
     if (!results.length) throw new Error(`Adresse introuvable: ${address}`);
     return results[0];
-}
-
-export async function reverseGeocode(lat, lon) {
-    const url = `https://api-adresse.data.gouv.fr/reverse/?lat=${lat}&lon=${lon}&limit=1`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Échec du géocodage inverse');
-    const data = await res.json();
-    if (!data.features || !data.features.length) throw new Error('Adresse introuvable pour cette position');
-    const { coordinates } = data.features[0].geometry;
-    const { label } = data.features[0].properties;
-    return { lat: coordinates[1], lon: coordinates[0], label };
 }
 
 export async function getItinerary(start, end) {

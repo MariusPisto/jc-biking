@@ -78,6 +78,7 @@ html {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -334,6 +335,7 @@ html {
   cursor: pointer;
   transition: transform 0.2s ease;
 }
+
 .view-switch-btn:active {
   transform: scale(0.95);
 }
@@ -434,9 +436,11 @@ body.view-map .itinerary-panel {
   transition: transform 0.3s;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
+
 .notification-section input[type="checkbox"]:checked {
   background-color: var(--primary-color);
 }
+
 .notification-section input[type="checkbox"]:checked::before {
   transform: translateX(20px);
 }
@@ -500,7 +504,7 @@ body.view-map .itinerary-panel {
 }
 
 /* Make sure primary occupies the full row */
-.button-group > button.primary {
+.button-group>button.primary {
   width: 100%;
   display: block;
 }
@@ -632,14 +636,17 @@ body.view-map .itinerary-panel {
   gap: 0.75rem;
   transition: background-color 0.15s ease;
 }
+
 .ac-suggestion::before {
   content: "📍";
   font-size: 1.1rem;
   opacity: 0.7;
 }
+
 .ac-suggestion:hover {
   background-color: var(--bg-light);
 }
+
 .ac-loading {
   padding: 0.9rem 1rem;
   color: var(--text-light);
@@ -712,7 +719,8 @@ body.view-map .itinerary-panel {
 }
 
 #results-container.collapsed #steps {
-  max-height: 200000px; /* ensure all content is shown, there is a scrollbar anyway but we need to keep it otherwise it doesn't show any step */
+  max-height: 200000px;
+  /* ensure all content is shown, there is a scrollbar anyway but we need to keep it otherwise it doesn't show any step */
   opacity: 1;
   margin-top: 1rem;
   pointer-events: auto;
@@ -725,9 +733,11 @@ body.view-map .itinerary-panel {
   padding: 0.75rem 0;
   border-bottom: 1px solid var(--border-color);
 }
+
 .step-item:last-child {
   border-bottom: none;
 }
+
 .step-marker {
   font-size: 1.75rem;
   color: var(--primary-color);
@@ -736,18 +746,22 @@ body.view-map .itinerary-panel {
   width: 30px;
   text-align: center;
 }
+
 .step-content {
   flex-grow: 1;
 }
+
 .step-title {
   font-size: 1.1rem;
   font-weight: 600;
 }
+
 .step-sub {
   font-size: 0.95rem;
   color: var(--text-light);
   margin-top: 0.25rem;
 }
+
 .step-badge {
   background: var(--bg-light);
   border: 1px solid var(--border-color);
@@ -774,7 +788,8 @@ body.view-map .itinerary-panel {
   border-radius: 8px;
   margin-bottom: 0.5rem;
   transition: background-color 0.2s;
-  padding-right: 1rem; /* Space for toggle icon */
+  padding-right: 1rem;
+  /* Space for toggle icon */
   border-bottom: none;
 }
 
@@ -802,17 +817,25 @@ body.view-map .itinerary-panel {
   list-style: none;
   padding: 0;
   margin: 0;
+  display: grid;
+  grid-template-rows: 0fr;
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out;
+  transition: grid-template-rows 0.4s ease-in-out, opacity 0.3s ease-in-out, max-height 0.4s ease-in-out, overflow 0.4s ease-in-out;
   padding-left: 1rem;
 }
 
 .segment-item.expanded .segment-steps {
-  max-height: 5000px;
+  grid-template-rows: auto;
+  max-height: none;
+  overflow: visible;
   opacity: 1;
   padding-bottom: 1rem;
+}
+
+.segment-steps > * {
+  min-height: 0;
 }
 
 .segment-steps .step-item {
