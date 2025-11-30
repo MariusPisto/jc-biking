@@ -4,20 +4,6 @@
 
 -----
 
-## Automated Build System
-
-This project contains some automated build to avoid pre-built problems.
-
-### Included Scripts
-
-| Script | Description |
-| :--- | :--- |
-| **`compile.bat`** | <br>1. Auto-detects Visual Studio & MSBuild location.<br>2. Cleans previous artifacts.<br>3. **Restores NuGet packages** (fixes missing references).<br>4. Compiles all projects.<br>5. **Deploys `.env`** configuration to the correct output folders. |
-| **`run_servers_rls.bat`** | Starts all services in Release mode:<br>1. Starts Proxy service (port 8733)<br>2. Starts Server service (WCF)<br>3. Starts FakeNotification service (ActiveMQ simulation)<br>4. Starts HeavyClient (Java Swing application)<br>5. Starts Python HTTP server for Web client (port 8000)<br>6. Opens browser to http://localhost:8000<br><br>**Note:** Requires administrator privileges. Press Enter in the window to stop all services. |
-| **`run_servers_dbg.bat`** | Starts all services in Debug mode (same as above but with Debug builds). Useful for development and debugging. Automatically stops all services when you press Enter. /!\ Does not work without manual compilation /!\ |
-
------
-
 ## Configuration
 
 ### Environment Variables
@@ -70,6 +56,20 @@ An example of the .env file is in Server/.env.example
     > *- Open browser to http://localhost:8000/*
     
     > **Note:** The script will ask for administrator privileges. Press Enter in the script window to stop all services.
+
+-----
+
+## Automated Build System
+
+This project contains some automated build to avoid pre-built problems.
+
+### Included Scripts
+
+| Script | Description |
+| :--- | :--- |
+| **`compile.bat`** | <br>1. Auto-detects Visual Studio & MSBuild location.<br>2. Cleans previous artifacts.<br>3. **Restores NuGet packages** (fixes missing references).<br>4. Compiles all projects.<br>5. **Deploys `.env`** configuration to the correct output folders. |
+| **`run_servers_rls.bat`** | Starts all services in Release mode:<br>1. Starts Proxy service (port 8733)<br>2. Starts Server service (WCF)<br>3. Starts FakeNotification service (ActiveMQ simulation)<br>4. Starts HeavyClient (Java Swing application)<br>5. Starts Python HTTP server for Web client (port 8000)<br>6. Opens browser to http://localhost:8000<br><br>**Note:** Requires administrator privileges. Press Enter in the window to stop all services. |
+| **`run_servers_dbg.bat`** | Starts all services in Debug mode (same as above but with Debug builds). Useful for development and debugging. Automatically stops all services when you press Enter. /!\ Does not work without manual compilation /!\ |
 
 -----
 

@@ -3,6 +3,7 @@ const phrases = [
   "1 km en vélo, ça use, ça use...",
   "Une marche à pied, un vélo, une RedBull !",
   "Si c'est long, vous avez sûrement une mauvaise connexion 🥸",
+  "Et on fait tourner les serveurs... tatata"
 ];
 
 const phrasesContainer = document.getElementById("loading-phrases");
