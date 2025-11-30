@@ -20,22 +20,18 @@ namespace Proxy
 
         public APIResponse GetRouteCache(string url)
         {
-            APIResponse response = null;
-
-            if (cache.Contains(url))
-            {
-               response = (APIResponse) cache.Get(url);
-            }
+            APIResponse response = cache.Get(url) as APIResponse;
 
             if (response != null)
             {
                 Console.WriteLine($"{url} (Cached)");
-            } else
+            }
+            else
             {
-                Console.WriteLine($"{url} (Not Cached)");
+                Console.WriteLine($"{url} (Not Cached or Expired)");
             }
 
-                return response;
+            return response;
         }
 
         public void SetRouteCache(string url, APIResponse response)
