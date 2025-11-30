@@ -91,7 +91,7 @@ The following libraries are used for memory handling and buffering:
 
 ## Project Architecture
 
-The project follows a **multi-tier architecture** with several components:
+The project splits in several components:
 
 ### Backend Services
 
