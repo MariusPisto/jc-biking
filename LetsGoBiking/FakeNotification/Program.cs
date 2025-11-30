@@ -9,9 +9,9 @@ namespace FakeNotificationService
 {
     public class Notification
     {
-        public string Type { get; set; } 
-        public string Level { get; set; } 
-        public string Message { get; set; }
+        public required string Type { get; set; } 
+        public required string Level { get; set; } 
+        public required string Message { get; set; }
     }
 
     internal class Program
