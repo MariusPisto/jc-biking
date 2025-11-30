@@ -54,168 +54,154 @@ namespace Server
                 GeoCoordinate OriginCoord = new GeoCoordinate(OriginLat, OriginLng);
                 GeoCoordinate DestCoord = new GeoCoordinate(DestLat, DestLng);
 
-                GeoCoordinate CurrentOriginCoord = OriginCoord;
-                Station LastStation = null;
-
                 List<Route> WalkRoutes = new List<Route>();
                 List<BikeRoute> BikeRoutes = new List<BikeRoute>();
 
-                Station ClosestLastDestination = Stations
-                    .Where(s => s.totalStands != null && s.totalStands.availabilities != null && s.totalStands.availabilities.stands > 0)
-                    .OrderBy(s => DestCoord.GetDistanceTo(new GeoCoordinate(s.position.latitude, s.position.longitude)))
-                    .FirstOrDefault();
-
                 HashSet<string> UsedContract = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                Location DestinationLocation = new Location
-                {
-                    Latitude = DestCoord.Latitude,
-                    Longitude = DestCoord.Longitude
-                };
-                bool destinationReachedByFoot = false;
+                
+                // 1. Global Selection of Contracts
+                var selectedSegments = new List<(string Contract, Station PickupStation, Station DropoffStation, RouteFeature BikeRoute, double DistanceFromStart)>();
+                
+                // Calculate direct walk time once for comparison
+                Location GlobalStartLocation = new Location { Latitude = OriginCoord.Latitude, Longitude = OriginCoord.Longitude };
+                Location GlobalEndLocation = new Location { Latitude = DestCoord.Latitude, Longitude = DestCoord.Longitude };
+                
+                RouteFeature GlobalWalkDirectRoute = await ORSApi.getRoute(GlobalStartLocation, GlobalEndLocation, "foot-walking");
+                double globalWalkDirectDuration = GlobalWalkDirectRoute.Properties.Summary.Duration;
+                Console.WriteLine($"\nGlobal Direct Walk Duration: {globalWalkDirectDuration}s\n");
 
-                while (LastStation != ClosestLastDestination)
+                while (true)
                 {
-                    Console.WriteLine($"Looking the closest station from ({CurrentOriginCoord.Latitude}, {CurrentOriginCoord.Longitude})");
-                    Station ClosestOriginStation = Stations
+                    Console.WriteLine($"Looking for best contract close to the line from ({OriginCoord.Latitude}, {OriginCoord.Longitude}) to ({DestCoord.Latitude}, {DestCoord.Longitude})");
+
+                    var candidateStation = Stations
                         .Where(s =>
                             s.totalStands != null &&
                             s.totalStands.availabilities != null &&
                             s.totalStands.availabilities.bikes > 0 &&
                             !UsedContract.Contains(s.contractName))
-                        .OrderBy(s => CurrentOriginCoord.GetDistanceTo(new GeoCoordinate(s.position.latitude, s.position.longitude)))
+                        .Select(s => new
+                        {
+                            Station = s,
+                            DistanceToLine = new GeoCoordinate(s.position.latitude, s.position.longitude)
+                                .GetDistanceFromSegment(OriginCoord, DestCoord)
+                        })
+                        .OrderBy(x => x.DistanceToLine)
                         .FirstOrDefault();
 
-                    if (ClosestOriginStation == null)
+                    if (candidateStation == null)
                     {
-                        Console.WriteLine("No more origin stations available. Breaking loop.");
+                        Console.WriteLine("No more candidate stations/contracts available.");
                         break;
                     }
 
-                    Console.WriteLine($"Origin station is at ({ClosestOriginStation.position.latitude}, {ClosestOriginStation.position.longitude}) in the contract {ClosestOriginStation.contractName}");
+                    string candidateContract = candidateStation.Station.contractName;
+                    Console.WriteLine("\n\n================================");
+                    Console.WriteLine($"Candidate contract found: {candidateContract} (Distance to line: {candidateStation.DistanceToLine:F2}m)");
+                    // Find best pickup (closest to Global Start) and dropoff (closest to Global End) in this contract
+                    Station BestPickupStation = Stations
+                        .Where(s => s.contractName == candidateContract && s.totalStands.availabilities.bikes > 0)
+                        .OrderBy(s => OriginCoord.GetDistanceTo(new GeoCoordinate(s.position.latitude, s.position.longitude)))
+                        .FirstOrDefault();
 
-                    Console.WriteLine($"Checking if quicklier to go by foot to the next station without using the last bike route");
-
-                    Station ClosestDestinationStation = Stations
-                        .Where(s => s.totalStands != null && s.totalStands.availabilities != null && s.totalStands.availabilities.stands > 0 && s.contractName == ClosestOriginStation.contractName)
+                    Station BestDropoffStation = Stations
+                        .Where(s => s.contractName == candidateContract && s.totalStands.availabilities.stands > 0)
                         .OrderBy(s => DestCoord.GetDistanceTo(new GeoCoordinate(s.position.latitude, s.position.longitude)))
                         .FirstOrDefault();
-                    if (ClosestDestinationStation == null)
+
+                    if (BestPickupStation == null || BestDropoffStation == null)
                     {
-                        Console.WriteLine("No destination station available for this contract. Breaking loop.");
-                        break;
-                    }
-                    Console.WriteLine($"Destination station is at ({ClosestDestinationStation.position.latitude}, {ClosestDestinationStation.position.longitude}) in the contract {ClosestDestinationStation.contractName}");
-
-
-                    Location StartLocation = new Location
-                    {
-                        Latitude = CurrentOriginCoord.Latitude,
-                        Longitude = CurrentOriginCoord.Longitude
-                    };
-                    Location PickupLocation = new Location
-                    {
-                        Latitude = ClosestOriginStation.position.latitude,
-                        Longitude = ClosestOriginStation.position.longitude
-                    };
-                    Location DropoffLocation = new Location
-                    {
-                        Latitude = ClosestDestinationStation.position.latitude,
-                        Longitude = ClosestDestinationStation.position.longitude
-                    };
-
-                    RouteFeature WalkDirectRoute = await ORSApi.getRoute(
-                        StartLocation,
-                        DestinationLocation,
-                        "foot-walking"
-                    );
-
-                    RouteFeature ToPickupRoute = await ORSApi.getRoute(
-                        StartLocation,
-                        PickupLocation,
-                        "foot-walking"
-                    );
-                    RouteFeature BikeRoute = await ORSApi.getRoute(
-                        PickupLocation,
-                        DropoffLocation,
-                        "cycling-regular"
-                    );
-                    RouteFeature DropoffToDestinationRoute = await ORSApi.getRoute(
-                        DropoffLocation,
-                        DestinationLocation,
-                        "foot-walking"
-                    );
-
-                    double mixedDuration =
-                        ToPickupRoute.Properties.Summary.Duration +
-                        BikeRoute.Properties.Summary.Duration +
-                        DropoffToDestinationRoute.Properties.Summary.Duration;
-                    double walkDirectDuration = WalkDirectRoute.Properties.Summary.Duration;
-
-                    if (walkDirectDuration <= mixedDuration)
-                    {
-                        Console.WriteLine("Walking directly to destination is faster. Removing remaining bike routes.");
-                        WalkRoutes.Add(new Route
-                        {
-                            Start = StartLocation,
-                            End = DestinationLocation,
-                            Feature = WalkDirectRoute
-                        });
-                        destinationReachedByFoot = true;
-                        CurrentOriginCoord = DestCoord;
-                        LastStation = ClosestLastDestination;
-                        break;
+                        Console.WriteLine("Could not find valid pickup or dropoff in candidate contract. Skipping/Removing.");
+                        UsedContract.Add(candidateContract);
+                        continue;
                     }
 
-                    WalkRoutes.Add(
-                        new Route
-                        {
-                            Start = StartLocation,
-                            End = PickupLocation,
-                            Feature = ToPickupRoute
-                        }
-                    );
-                    BikeRoutes.Add(
-                        new BikeRoute
-                        {
-                            Start = PickupLocation,
-                            End = DropoffLocation,
-                            Feature = BikeRoute,
-                            AddressStart = ClosestOriginStation.address,
-                            AvailableBikes = ClosestOriginStation.totalStands.availabilities.bikes,
-                            AddressEnd = ClosestDestinationStation.address,
-                            AvailableDropPlace = ClosestDestinationStation.totalStands.availabilities.stands,
-                            VehicleType = ClosestOriginStation.contractName.Contains("_dott") ? "scooter" : "bike"
-                        }
-                    );
+                    Console.WriteLine($"  Best Pickup for {candidateContract}: {BestPickupStation.name} (Lat: {BestPickupStation.position.latitude}, Lng: {BestPickupStation.position.longitude})");
+                    Console.WriteLine($"  Best Dropoff for {candidateContract}: {BestDropoffStation.name} (Lat: {BestDropoffStation.position.latitude}, Lng: {BestDropoffStation.position.longitude})");
 
-                    CurrentOriginCoord = new GeoCoordinate(DropoffLocation.Latitude, DropoffLocation.Longitude);
-                    LastStation = ClosestDestinationStation;
-                    UsedContract.Add(ClosestOriginStation.contractName);
+                    // Evaluate if this contract is useful
+                    Location PickupLoc = new Location { Latitude = BestPickupStation.position.latitude, Longitude = BestPickupStation.position.longitude };
+                    Location DropoffLoc = new Location { Latitude = BestDropoffStation.position.latitude, Longitude = BestDropoffStation.position.longitude };
+
+                    RouteFeature ToPickup = await ORSApi.getRoute(GlobalStartLocation, PickupLoc, "foot-walking");
+                    RouteFeature Bike = await ORSApi.getRoute(PickupLoc, DropoffLoc, "cycling-regular");
+                    RouteFeature DropoffToDest = await ORSApi.getRoute(DropoffLoc, GlobalEndLocation, "foot-walking");
+
+                    double mixedDuration = 
+                        ToPickup.Properties.Summary.Duration + 
+                        Bike.Properties.Summary.Duration + 
+                        DropoffToDest.Properties.Summary.Duration;
+
+                    Console.WriteLine($"Evaluation for {candidateContract}: Mixed {mixedDuration}s vs Direct {globalWalkDirectDuration}s");
+
+                    if (mixedDuration < globalWalkDirectDuration)
+                    {
+                        Console.WriteLine($"Contract {candidateContract} is useful. Adding to selection.");
+                        selectedSegments.Add((
+                            candidateContract,
+                            BestPickupStation,
+                            BestDropoffStation,
+                            Bike,
+                            OriginCoord.GetDistanceTo(new GeoCoordinate(BestPickupStation.position.latitude, BestPickupStation.position.longitude))
+                        ));
+                        UsedContract.Add(candidateContract);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Contract {candidateContract} is NOT useful (slower than walking). Stopping algorithm.");
+                        break;
+                    }
                 }
 
-                if (!destinationReachedByFoot)
+                // 2. Chain the selected segments
+                // Sort by distance from start to ensure correct order
+                var sortedSegments = selectedSegments.OrderBy(s => s.DistanceFromStart).ToList();
+                
+                Location CurrentLocation = GlobalStartLocation;
+
+                foreach (var segment in sortedSegments)
                 {
-                    // Add the last walking part
-                    Location LastStartLocation = new Location
+                    Station pickup = segment.PickupStation;
+                    Station dropoff = segment.DropoffStation;
+                    Location PickupLoc = new Location { Latitude = pickup.position.latitude, Longitude = pickup.position.longitude };
+                    Location DropoffLoc = new Location { Latitude = dropoff.position.latitude, Longitude = dropoff.position.longitude };
+
+                    Console.WriteLine($"Building route segment: Walk to {pickup.name} -> Bike to {dropoff.name}");
+
+                    // Walk from Current to Pickup
+                    RouteFeature walkRoute = await ORSApi.getRoute(CurrentLocation, PickupLoc, "foot-walking");
+                    WalkRoutes.Add(new Route
                     {
-                        Latitude = CurrentOriginCoord.Latitude,
-                        Longitude = CurrentOriginCoord.Longitude
-                    };
+                        Start = CurrentLocation,
+                        End = PickupLoc,
+                        Feature = walkRoute
+                    });
 
-                    RouteFeature LastWalkRoute = await ORSApi.getRoute(
-                        LastStartLocation,
-                        DestinationLocation,
-                        "foot-walking"
-                    );
+                    // Bike from Pickup to Dropoff
+                    BikeRoutes.Add(new BikeRoute
+                    {
+                        Start = PickupLoc,
+                        End = DropoffLoc,
+                        Feature = segment.BikeRoute,
+                        AddressStart = pickup.address,
+                        AvailableBikes = pickup.totalStands.availabilities.bikes,
+                        AddressEnd = dropoff.address,
+                        AvailableDropPlace = dropoff.totalStands.availabilities.stands,
+                        VehicleType = pickup.contractName.Contains("_dott") ? "scooter" : "bike"
+                    });
 
-                    WalkRoutes.Add(
-                        new Route
-                        {
-                            Start = LastStartLocation,
-                            End = DestinationLocation,
-                            Feature = LastWalkRoute
-                        });
+                    CurrentLocation = DropoffLoc;
                 }
+
+                // 3. Final Walk
+                Console.WriteLine("Building final walk segment.");
+                RouteFeature finalWalk = await ORSApi.getRoute(CurrentLocation, GlobalEndLocation, "foot-walking");
+                WalkRoutes.Add(new Route
+                {
+                    Start = CurrentLocation,
+                    End = GlobalEndLocation,
+                    Feature = finalWalk
+                });
 
                 return new ItineraryResponse
                 {
