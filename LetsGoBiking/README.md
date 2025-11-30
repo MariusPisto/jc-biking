@@ -76,7 +76,7 @@ This project relies on several external NuGet packages to handle JSON serializat
 
 ### System & Performance (Low Level)
 
-The following libraries are used for high-performance memory handling and buffering:
+The following libraries are used for memory handling and buffering:
 
   * `System.IO.Pipelines` (v9.0.10)
   * `System.Text.Encodings.Web` (v9.0.10)
