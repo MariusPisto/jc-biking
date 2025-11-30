@@ -56,6 +56,10 @@ namespace Proxy
                     duration = STATIONS_DURATION;
                     break;
 
+                case "json": // GBFS feeds
+                    duration = TimeSpan.FromHours(1);
+                    break;
+
                 default:
                     duration = DEFAULT_DURATION;
                     break;

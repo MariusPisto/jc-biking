@@ -25,5 +25,8 @@ namespace Server.Entities.Response
         
         [DataMember(Name = "availableDropPlace")]
         public int AvailableDropPlace { get; set; }
+
+        [DataMember(Name = "vehicleType")]
+        public string VehicleType { get; set; }
     }
 }

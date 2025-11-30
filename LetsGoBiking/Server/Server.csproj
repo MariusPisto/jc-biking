@@ -85,6 +85,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="API\BaseAPI.cs" />
+    <Compile Include="API\DottAPI.cs" />
     <Compile Include="API\GeoapifyAPI.cs" />
     <Compile Include="API\OpenRouteServiceAPI.cs" />
     <Compile Include="API\JCDecauxAPI.cs" />
@@ -94,6 +95,8 @@
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
     <Compile Include="Entities\Availabilities.cs" />
+    <Compile Include="Entities\Dott\DottFeed.cs" />
+    <Compile Include="Entities\Dott\DottStation.cs" />
     <Compile Include="Entities\Geoapify\FeatureCollection.cs" />
     <Compile Include="Entities\JCDecaux\Contract.cs" />
     <Compile Include="Entities\GeoCoordinate.cs" />

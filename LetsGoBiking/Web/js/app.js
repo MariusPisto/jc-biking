@@ -35,7 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
         panelToggleBtn: document.getElementById('panel-toggle-btn'),
         resultsContainer: document.getElementById('results-container'),
         viewSwitchBtn: document.getElementById('view-switch-btn'),
-        loader: document.getElementById('loader')
+        loader: document.getElementById('loader'),
+        dottToggleBtn: document.getElementById('dott-toggle-btn')
     };
 
     function initialize() {
@@ -354,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 geocodeAddress(endText)
             ]);
 
-            const itineraryData = await getItinerary(startGeocoded, endGeocoded);
+            const itineraryData = await getItinerary(startGeocoded, endGeocoded, elements.dottToggleBtn.checked);
 
             const walkRoutes = itineraryData.walkRoutes || [];
             const bikeRoutes = itineraryData.bikeRoutes || [];
@@ -417,14 +418,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (isBike) {
                     bikeRouteInfo = route;
+                    const vehicleEmoji = route.vehicleType === 'scooter' ? '🛴' : '🚲';
+                    const stationLabel = route.vehicleType === 'scooter' ? 'Station Dott' : 'Station JCDecaux';
 
                     L.marker([route.start.latitude, route.start.longitude])
                         .addTo(routeLines)
-                        .bindPopup(`<b>🚲 Station de prise</b><br>${route.addressStart || 'Adresse inconnue'}<br><b>Vélos dispo: ${route.availableBikes || 'N/A'}</b>`);
+                        .bindPopup(`<b>${vehicleEmoji} ${stationLabel} (Prise)</b><br>${route.addressStart || 'Adresse inconnue'}<br><b>Dispo: ${route.availableBikes || 'N/A'}</b>`);
 
                     L.marker([route.end.latitude, route.end.longitude])
                         .addTo(routeLines)
-                        .bindPopup(`<b>🅿️ Station de rendu</b><br>${route.addressEnd || 'Adresse inconnue'}<br><b>Places dispo: ${route.availableDropPlace || 'N/A'}</b>`);
+                        .bindPopup(`<b>🅿️ ${stationLabel} (Rendu)</b><br>${route.addressEnd || 'Adresse inconnue'}<br><b>Places dispo: ${route.availableDropPlace || 'N/A'}</b>`);
                 }
 
                 totalDistance += route.feature.properties.summary.distance;
@@ -455,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const icon = isLast ? '🏁' : '🚶';
                     const subtext = isFirst && bikeRouteInfo
-                        ? `${durationStr} | <b>${bikeRouteInfo.availableBikes || 'N/A'} vélos dispo</b>`
+                        ? `${durationStr} | <b>${bikeRouteInfo.availableBikes || 'N/A'} dispo</b>`
                         : `${durationStr}`;
 
                     segmentStepsContainer = createRouteSegment(
@@ -465,12 +468,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         icon
                     );
                 } else if (isBike) {
+                    const vehicleEmoji = route.vehicleType === 'scooter' ? '🛴' : '🚲';
                     const subtext = `${durationStr} | <b>${route.availableDropPlace || 'N/A'} places dispo</b>`;
                     segmentStepsContainer = createRouteSegment(
                         elements.stepsEl,
                         `Roulez vers ${route.addressEnd || 'la station de rendu'}`,
                         subtext,
-                        '🚲'
+                        vehicleEmoji
                     );
                 }
 
@@ -478,7 +482,19 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const totalKm = (totalDistance / 1000).toFixed(1);
-            const modeIcons = bikeRoutes.length > 0 ? '🚶+🚲' : '🚶';
+
+            const hasScooter = bikeRoutes.some(r => r.vehicleType === 'scooter');
+            const hasBike = bikeRoutes.some(r => r.vehicleType !== 'scooter');
+
+            let modeIcons = '🚶';
+            if (hasScooter && hasBike) {
+                modeIcons += '+🚲+🛴';
+            } else if (hasScooter) {
+                modeIcons += '+🛴';
+            } else if (hasBike) {
+                modeIcons += '+🚲';
+            }
+
             setStatus(elements.statusEl, `Total: ${totalKm} km • ${formatDuration(totalDuration)} (${modeIcons})`);
 
         } catch (err) {
@@ -551,15 +567,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const trimmedValue = value.trim();
-        
+
         // Check if input is coordinates
         const coordPattern = /^\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*$/;
         const match = trimmedValue.match(coordPattern);
-        
+
         if (match) {
             const lat = parseFloat(match[1]);
             const lon = parseFloat(match[2]);
-            
+
             // Validate coordinate ranges
             if (!isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
                 updatePinMarker(type, lat, lon);
@@ -582,11 +598,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function removePinMarker(type) {
         const isStart = type === 'start';
         const marker = isStart ? startPinMarker : endPinMarker;
-        
+
         if (marker && pinLayer) {
             pinLayer.removeLayer(marker);
         }
-        
+
         if (isStart) {
             startPinMarker = null;
         } else {
@@ -608,7 +624,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.stepsEl.innerHTML = '';
         elements.resultsContainer.classList.add('collapsed');
         localStorage.removeItem(DEMO_MODE_KEY);
-        
+
         // Re-show pins based on current address field values
         if (elements.startAC && elements.startAC.value) {
             handleAddressUpdate('start', elements.startAC.value);
