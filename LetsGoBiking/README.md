@@ -128,7 +128,7 @@ The project splits in several components:
     - Desktop application built with Java Swing
     - Uses JXMapViewer for map visualization
     - Provides basic functionalities, not all the web functionnalities are present
-    - Built with Maven
+    - Builds with Maven
     - Located in the `HeavyClient/` directory
 
 -----
